@@ -1,0 +1,194 @@
+package com.easytoday.guidegroup.presentation.viewmodel
+
+import android.location.Location
+import androidx.lifecycle.SavedStateHandle
+import com.easytoday.guidegroup.domain.model.PointOfInterest
+import com.easytoday.guidegroup.domain.model.Result
+import com.easytoday.guidegroup.domain.model.User
+import com.easytoday.guidegroup.domain.repository.AuthRepository
+import com.easytoday.guidegroup.domain.repository.GeofenceRepository
+import com.easytoday.guidegroup.domain.repository.LocationClient // Import pour LocationClient
+import com.easytoday.guidegroup.domain.repository.PointOfInterestRepository
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.mockk.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import timber.log.Timber
+import java.lang.Exception
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class MapViewModelTest : BehaviorSpec({
+
+    val testDispatcher = StandardTestDispatcher()
+
+    beforeSpec {
+        Dispatchers.setMain(testDispatcher)
+        if (Timber.treeCount == 0) {
+            Timber.plant(object : Timber.Tree() {
+                override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+                    // Ne rien faire
+                }
+            })
+        }
+    }
+
+    afterSpec {
+        Dispatchers.resetMain()
+    }
+
+    val mockLocationClient = mockk<LocationClient>() // Mock de LocationClient
+    val mockPointOfInterestRepository = mockk<PointOfInterestRepository>()
+    val mockAuthRepository = mockk<AuthRepository>()
+    val mockGeofenceRepository = mockk<GeofenceRepository>() // Mock de GeofenceRepository
+    val mockSavedStateHandle = mockk<SavedStateHandle>(relaxed = true) // Mock de SavedStateHandle
+
+    val testUser = User(id = "user1", email = "user@example.com", username = "TestUser")
+    val initialUserFlow = MutableStateFlow<User?>(null)
+    val initialGeofencesFlow = MutableStateFlow<List<com.easytoday.guidegroup.domain.model.Geofence>>(emptyList())
+    val initialGeofenceTriggerEventsFlow = MutableStateFlow<String?>(null)
+
+    beforeEach {
+        clearAllMocks()
+
+        // Réinitialiser les flows pour chaque test
+        initialUserFlow.value = null
+        initialGeofencesFlow.value = emptyList()
+        initialGeofenceTriggerEventsFlow.value = null
+
+        // Comportements par défaut des mocks
+        every { mockAuthRepository.getCurrentUser() } returns initialUserFlow
+        // Mock de getLocationUpdates pour LocationClient
+        every { mockLocationClient.getLocationUpdates(any()) } returns flowOf(Location("test").apply {
+            latitude = 0.0
+            longitude = 0.0
+        }) // Émet une localisation par défaut
+
+        // Mock pour GeofenceRepository
+        every { mockGeofenceRepository.getGeofences() } returns flowOf(Result.Loading, Result.Success(initialGeofencesFlow.value))
+        every { mockGeofenceRepository.getGeofenceTriggerEvents() } returns initialGeofenceTriggerEventsFlow
+        coEvery { mockGeofenceRepository.addOrUpdateGeofence(any()) } returns flowOf(Result.Success(Unit))
+        coEvery { mockGeofenceRepository.removeGeofence(any()) } returns flowOf(Result.Success(Unit))
+
+        // Mock pour PointOfInterestRepository
+        every { mockPointOfInterestRepository.getGroupPointsOfInterest(any()) } returns flowOf(emptyList())
+        coEvery { mockPointOfInterestRepository.addPointOfInterest(any()) } returns "newPoiId"
+    }
+
+    Given("MapViewModel") {
+
+        When("le ViewModel est initialisé") {
+            val viewModel = MapViewModel(mockGeofenceRepository, mockLocationClient, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle() // Permettre aux coroutines init de s'exécuter
+
+            Then("il devrait observer l'utilisateur actuel") {
+                viewModel.currentUser.value shouldBe null
+                coVerify { mockAuthRepository.getCurrentUser() }
+            }
+
+            Then("il devrait commencer à collecter les mises à jour de localisation") {
+                viewModel.currentLocation.value shouldBe Location("test").apply {
+                    latitude = 0.0
+                    longitude = 0.0
+                }
+                coVerify { mockLocationClient.getLocationUpdates(5000L) }
+            }
+
+            Then("il devrait observer les géofences") {
+                viewModel.geofences.value shouldBe emptyList()
+                coVerify { mockGeofenceRepository.getGeofences() }
+            }
+
+            Then("il devrait observer les événements de déclenchement de géofences") {
+                viewModel.geofenceTriggerEvents.value shouldBe null
+                coVerify { mockGeofenceRepository.getGeofenceTriggerEvents() }
+            }
+        }
+
+        When("une nouvelle localisation est émise par LocationClient") {
+            val viewModel = MapViewModel(mockGeofenceRepository, mockLocationClient, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            val newLocation = Location("gps").apply {
+                latitude = 48.8566
+                longitude = 2.3522
+                time = System.currentTimeMillis()
+            }
+            // Mocker le comportement de getLocationUpdates pour émettre la nouvelle localisation
+            every { mockLocationClient.getLocationUpdates(any()) } returns flowOf(newLocation)
+
+            // Recréer le ViewModel pour que le nouvel effet LaunchedEffect soit déclenché
+            val viewModelWithNewLocation = MapViewModel(mockGeofenceRepository, mockLocationClient, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            Then("la localisation actuelle devrait être mise à jour") {
+                viewModelWithNewLocation.currentLocation.value shouldBe newLocation
+            }
+        }
+
+        When("addOrUpdateGeofence est appelé") {
+            val viewModel = MapViewModel(mockGeofenceRepository, mockLocationClient, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            val testGeofence = com.easytoday.guidegroup.domain.model.Geofence(
+                id = "geo1",
+                latitude = 10.0,
+                longitude = 20.0,
+                radius = 100f
+            )
+
+            coEvery { mockGeofenceRepository.addOrUpdateGeofence(testGeofence) } returns flowOf(Result.Loading, Result.Success(Unit))
+
+            Then("il devrait appeler addOrUpdateGeofence sur le GeofenceRepository") {
+                runTest {
+                    viewModel.addOrUpdateGeofence(testGeofence)
+                    testDispatcher.advanceUntilIdle()
+                    coVerify(exactly = 1) { mockGeofenceRepository.addOrUpdateGeofence(testGeofence) }
+                }
+            }
+        }
+
+        When("removeGeofence est appelé") {
+            val viewModel = MapViewModel(mockGeofenceRepository, mockLocationClient, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            val geofenceId = "geo1"
+            coEvery { mockGeofenceRepository.removeGeofence(geofenceId) } returns flowOf(Result.Loading, Result.Success(Unit))
+
+            Then("il devrait appeler removeGeofence sur le GeofenceRepository") {
+                runTest {
+                    viewModel.removeGeofence(geofenceId)
+                    testDispatcher.advanceUntilIdle()
+                    coVerify(exactly = 1) { mockGeofenceRepository.removeGeofence(geofenceId) }
+                }
+            }
+        }
+
+        When("consumeGeofenceTriggerEvent est appelé") {
+            val viewModel = MapViewModel(mockGeofenceRepository, mockLocationClient, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            // Simuler un événement de déclenchement
+            initialGeofenceTriggerEventsFlow.value = "Entered Geofence A"
+            testDispatcher.advanceUntilIdle()
+            viewModel.geofenceTriggerEvents.value shouldBe "Entered Geofence A"
+
+            Then("l'événement de déclenchement devrait être réinitialisé à null") {
+                viewModel.consumeGeofenceTriggerEvent()
+                viewModel.geofenceTriggerEvents.value shouldBe null
+            }
+        }
+    }
+})
+
+

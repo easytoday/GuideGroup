@@ -1,0 +1,281 @@
+package com.easytoday.guidegroup.presentation.viewmodel
+
+import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
+import com.easytoday.guidegroup.domain.model.Message
+import com.easytoday.guidegroup.domain.model.Result
+import com.easytoday.guidegroup.domain.model.User
+import com.easytoday.guidegroup.domain.repository.AuthRepository
+import com.easytoday.guidegroup.domain.repository.MessageRepository
+import com.easytoday.guidegroup.domain.usecase.SendMessageUseCase
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.mockk.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import timber.log.Timber
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ChatViewModelTest : BehaviorSpec({
+
+    val testDispatcher = StandardTestDispatcher()
+
+    beforeSpec {
+        Dispatchers.setMain(testDispatcher)
+        if (Timber.treeCount == 0) {
+            Timber.plant(object : Timber.Tree() {
+                override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+                    // Ne rien faire
+                }
+            })
+        }
+    }
+
+    afterSpec {
+        Dispatchers.resetMain()
+    }
+
+    val mockSendMessageUseCase = mockk<SendMessageUseCase>()
+    val mockMessageRepository = mockk<MessageRepository>()
+    val mockAuthRepository = mockk<AuthRepository>()
+    val mockSavedStateHandle = mockk<SavedStateHandle>()
+
+    val testUser = User(id = "user1", email = "test@example.com", username = "TestUser")
+    val testGroupId = "group123"
+
+    val currentUserFlow = MutableStateFlow<User?>(null)
+    val messagesForGroupFlow = MutableStateFlow<List<Message>>(emptyList())
+
+    beforeEach {
+        clearAllMocks()
+
+        // Default mocks for init block
+        every { mockSavedStateHandle.get<String>("groupId") } returns testGroupId
+        every { mockAuthRepository.getCurrentUser() } returns currentUserFlow
+        every { mockMessageRepository.getMessagesForGroup(testGroupId) } returns messagesForGroupFlow
+
+        // Reset flows
+        currentUserFlow.value = null
+        messagesForGroupFlow.value = emptyList()
+    }
+
+    Given("ChatViewModel") {
+
+        When("le ViewModel est initialisé") {
+            val viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            Then("il devrait récupérer le groupId du SavedStateHandle") {
+                viewModel.groupId.value shouldBe testGroupId
+            }
+
+            Then("il devrait observer l'utilisateur actuel") {
+                coVerify { mockAuthRepository.getCurrentUser() }
+            }
+
+            Then("il devrait observer les messages pour le groupe") {
+                coVerify { mockMessageRepository.getMessagesForGroup(testGroupId) }
+            }
+        }
+
+        When("sendMessage est appelé avec un message texte valide") {
+            val viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, mockSavedStateHandle)
+            currentUserFlow.value = testUser // Simuler un utilisateur connecté
+            testDispatcher.advanceUntilIdle()
+
+            val textMessage = "Hello, world!"
+            val expectedMessage = Message(
+                senderId = testUser.id,
+                senderName = testUser.username,
+                text = textMessage
+            )
+
+            coEvery { mockSendMessageUseCase.invoke(testGroupId, any()) } returns flowOf(Result.Loading, Result.Success(Unit))
+
+            Then("il devrait émettre Result.Loading puis Result.Success") {
+                runTest {
+                    val results = mutableListOf<Result<Unit>>()
+                    val job = launch { viewModel.sendMessageState.toList(results) }
+
+                    viewModel.sendMessage(textMessage)
+                    testDispatcher.advanceUntilIdle()
+
+                    results.size shouldBe 2 // Initial Loading + Success
+                    results[0] shouldBe Result.Loading
+                    results[1].shouldBeInstanceOf<Result.Success<Unit>>()
+
+                    coVerify(exactly = 1) { mockSendMessageUseCase.invoke(testGroupId, match {
+                        it.senderId == expectedMessage.senderId &&
+                                it.senderName == expectedMessage.senderName &&
+                                it.text == expectedMessage.text
+                    }) }
+                    job.cancel()
+                }
+            }
+
+            And("le message texte est vide") {
+                val emptyMessage = ""
+                Then("il devrait émettre Result.Error") {
+                    runTest {
+                        val results = mutableListOf<Result<Unit>>()
+                        val job = launch { viewModel.sendMessageState.toList(results) }
+
+                        viewModel.sendMessage(emptyMessage)
+                        testDispatcher.advanceUntilIdle()
+
+                        results.size shouldBe 1 // Seulement l'erreur, pas de loading initial
+                        results[0].shouldBeInstanceOf<Result.Error>()
+                        results[0].message shouldBe "Le message ne peut pas être vide."
+                        coVerify(exactly = 0) { mockSendMessageUseCase.invoke(any(), any()) }
+                        job.cancel()
+                    }
+                }
+            }
+        }
+
+        When("sendMediaMessage est appelé avec un URI de média valide") {
+            val viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, mockSavedStateHandle)
+            currentUserFlow.value = testUser // Simuler un utilisateur connecté
+            testDispatcher.advanceUntilIdle()
+
+            val mediaUri = mockk<Uri>()
+            val mediaType = Message.MediaType.IMAGE
+            val downloadUrl = "http://example.com/image.jpg"
+
+            coEvery { mockMessageRepository.uploadMedia(mediaUri, mediaType) } returns Result.Success(downloadUrl)
+            coEvery { mockSendMessageUseCase.invoke(testGroupId, any()) } returns flowOf(Result.Loading, Result.Success(Unit))
+
+            Then("il devrait télécharger le média puis envoyer le message") {
+                runTest {
+                    val uploadResults = mutableListOf<Result<String>>()
+                    val uploadJob = launch { viewModel.uploadMediaState.toList(uploadResults) }
+
+                    val sendResults = mutableListOf<Result<Unit>>()
+                    val sendJob = launch { viewModel.sendMessageState.toList(sendResults) }
+
+                    viewModel.sendMediaMessage(mediaUri, mediaType)
+                    testDispatcher.advanceUntilIdle()
+
+                    uploadResults.size shouldBe 2
+                    uploadResults[0] shouldBe Result.Loading
+                    uploadResults[1].shouldBeInstanceOf<Result.Success<String>>()
+                    uploadResults[1].data shouldBe downloadUrl
+
+                    sendResults.size shouldBe 2
+                    sendResults[0] shouldBe Result.Loading
+                    sendResults[1].shouldBeInstanceOf<Result.Success<Unit>>()
+
+                    coVerify(exactly = 1) { mockMessageRepository.uploadMedia(mediaUri, mediaType) }
+                    coVerify(exactly = 1) { mockSendMessageUseCase.invoke(testGroupId, match {
+                        it.senderId == testUser.id &&
+                                it.senderName == testUser.username &&
+                                it.mediaUrl == downloadUrl &&
+                                it.mediaType == mediaType
+                    }) }
+                    uploadJob.cancel()
+                    sendJob.cancel()
+                }
+            }
+
+            And("le téléchargement de média échoue") {
+                val uploadErrorMessage = "Failed to upload"
+                val uploadException = Exception("Upload error")
+                coEvery { mockMessageRepository.uploadMedia(mediaUri, mediaType) } returns Result.Error(uploadErrorMessage, uploadException)
+
+                Then("il devrait émettre Result.Error pour le téléchargement et l'envoi") {
+                    runTest {
+                        val uploadResults = mutableListOf<Result<String>>()
+                        val uploadJob = launch { viewModel.uploadMediaState.toList(uploadResults) }
+
+                        val sendResults = mutableListOf<Result<Unit>>()
+                        val sendJob = launch { viewModel.sendMessageState.toList(sendResults) }
+
+                        viewModel.sendMediaMessage(mediaUri, mediaType)
+                        testDispatcher.advanceUntilIdle()
+
+                        uploadResults.size shouldBe 2
+                        uploadResults[0] shouldBe Result.Loading
+                        uploadResults[1].shouldBeInstanceOf<Result.Error>()
+                        uploadResults[1].message shouldBe uploadErrorMessage
+
+                        sendResults.size shouldBe 1 // Seulement l'erreur, pas de loading initial pour l'envoi de message
+                        sendResults[0].shouldBeInstanceOf<Result.Error>()
+                        sendResults[0].message shouldBe "Échec du téléchargement du média: $uploadErrorMessage"
+
+                        coVerify(exactly = 1) { mockMessageRepository.uploadMedia(mediaUri, mediaType) }
+                        coVerify(exactly = 0) { mockSendMessageUseCase.invoke(any(), any()) } // Pas d'appel à sendMessageUseCase
+                        uploadJob.cancel()
+                        sendJob.cancel()
+                    }
+                }
+            }
+
+            And("l'envoi du message échoue après le téléchargement réussi") {
+                coEvery { mockMessageRepository.uploadMedia(mediaUri, mediaType) } returns Result.Success(downloadUrl)
+                val sendErrorMessage = "Failed to send message"
+                val sendException = Exception("Send error")
+                coEvery { mockSendMessageUseCase.invoke(testGroupId, any()) } returns flowOf(Result.Loading, Result.Error(sendErrorMessage, sendException))
+
+                Then("il devrait émettre Result.Error pour l'envoi") {
+                    runTest {
+                        val uploadResults = mutableListOf<Result<String>>()
+                        val uploadJob = launch { viewModel.uploadMediaState.toList(uploadResults) }
+
+                        val sendResults = mutableListOf<Result<Unit>>()
+                        val sendJob = launch { viewModel.sendMessageState.toList(sendResults) }
+
+                        viewModel.sendMediaMessage(mediaUri, mediaType)
+                        testDispatcher.advanceUntilIdle()
+
+                        uploadResults.size shouldBe 2
+                        uploadResults[0] shouldBe Result.Loading
+                        uploadResults[1].shouldBeInstanceOf<Result.Success<String>>()
+
+                        sendResults.size shouldBe 2
+                        sendResults[0] shouldBe Result.Loading
+                        sendResults[1].shouldBeInstanceOf<Result.Error>()
+                        sendResults[1].message shouldBe sendErrorMessage
+
+                        coVerify(exactly = 1) { mockMessageRepository.uploadMedia(mediaUri, mediaType) }
+                        coVerify(exactly = 1) { mockSendMessageUseCase.invoke(any(), any()) }
+                        uploadJob.cancel()
+                        sendJob.cancel()
+                    }
+                }
+            }
+        }
+
+        When("resetSendMessageState est appelé") {
+            val viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            Then("l'état d'envoi de message devrait être réinitialisé à Loading") {
+                viewModel.sendMessageState.value shouldBe Result.Loading
+                viewModel.resetSendMessageState()
+                viewModel.sendMessageState.value shouldBe Result.Loading
+            }
+        }
+
+        When("resetUploadMediaState est appelé") {
+            val viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, mockSavedStateHandle)
+            testDispatcher.advanceUntilIdle()
+
+            Then("l'état de téléchargement de média devrait être réinitialisé à Loading") {
+                viewModel.uploadMediaState.value shouldBe Result.Loading
+                viewModel.resetUploadMediaState()
+                viewModel.uploadMediaState.value shouldBe Result.Loading
+            }
+        }
+    }
+})
+
+
