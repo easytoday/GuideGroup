@@ -43,7 +43,6 @@ class ChatViewModel @Inject constructor(
         observeMessages()
     }
 
-    // CORRECTION : Permet à un autre écran de configurer l'ID du groupe pour ce ViewModel.
     fun setGroupId(id: String?) {
         if (id != null && _groupId.value != id) {
             _groupId.value = id
@@ -121,9 +120,9 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun sharePoiInChat(poiId: String, poiName: String) {
-        val currentGroupId = _groupId.value ?: return
-        val sender = _currentUser.value ?: return
+    // CORRECTION : La fonction accepte maintenant tous les paramètres nécessaires pour être autonome.
+    fun sharePoiInChat(poiId: String, poiName: String, sender: User?, groupId: String?) {
+        if (sender == null || groupId == null) return // Vérification de sécurité
 
         viewModelScope.launch {
             val message = Message(
@@ -131,11 +130,12 @@ class ChatViewModel @Inject constructor(
                 senderName = sender.username,
                 text = "Point d'intérêt partagé : $poiName",
                 mediaType = Message.MediaType.POI,
-                poiId = poiId
+                poiId = poiId,
+                groupId = groupId // S'assurer que le message a le bon ID de groupe
             )
 
             _sendMessageState.value = Result.Loading
-            sendMessageUseCase(currentGroupId, message).collect { result ->
+            sendMessageUseCase(groupId, message).collect { result ->
                 _sendMessageState.value = result
                 if (result !is Result.Loading) {
                     resetSendMessageState()

@@ -8,7 +8,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,13 +44,11 @@ fun MapScreen(
     chatViewModel: ChatViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(groupId) {
         if (groupId != null) {
             viewModel.setGroupId(groupId)
-            // CORRECTION : S'assurer que le ChatViewModel connaît aussi le groupe
             chatViewModel.setGroupId(groupId)
         }
     }
@@ -86,7 +82,7 @@ fun MapScreen(
                 duration = SnackbarDuration.Long
             )
             if (result == SnackbarResult.ActionPerformed) {
-                chatViewModel.sharePoiInChat(poiId, poiName)
+                chatViewModel.sharePoiInChat(poiId, poiName, currentUser, groupId)
                 Toast.makeText(context, "Point d'intérêt partagé dans le chat !", Toast.LENGTH_SHORT).show()
             }
             viewModel.resetAddPoiState()
@@ -142,14 +138,19 @@ fun MapScreenContent(
 
     var showAddPoiDialog by remember { mutableStateOf(false) }
     var isInAddPoiMode by remember { mutableStateOf(false) }
+    var hasUserInteractedWithMap by remember { mutableStateOf(false) }
 
-    // CORRECTION : Le centrage automatique ne se fait que si l'utilisateur ne bouge pas la carte
     LaunchedEffect(userRealtimeLocation) {
-        userRealtimeLocation?.let {
-            if (!cameraPositionState.isMoving) {
+        if (!hasUserInteractedWithMap) {
+            userRealtimeLocation?.let {
                 cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f))
             }
         }
+    }
+
+    // CORRECTION : Détecter l'interaction utilisateur en observant l'état de la caméra
+    if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
+        hasUserInteractedWithMap = true
     }
 
     Scaffold(
@@ -168,6 +169,7 @@ fun MapScreenContent(
             AnimatedVisibility(visible = !isInAddPoiMode) {
                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FloatingActionButton(onClick = {
+                        hasUserInteractedWithMap = false
                         userRealtimeLocation?.let {
                             coroutineScope.launch {
                                 cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(it.latitude, it.longitude)))
@@ -191,10 +193,11 @@ fun MapScreenContent(
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                // CORRECTION : Activer les boutons de zoom natifs
                 uiSettings = MapUiSettings(zoomControlsEnabled = false),
-                // CORRECTION : UX améliorée pour le placement de POI par appui long
                 onMapLongClick = { latLng ->
                     if (!isInAddPoiMode) {
+                        hasUserInteractedWithMap = true
                         coroutineScope.launch {
                             cameraPositionState.animate(CameraUpdateFactory.newLatLng(latLng), 500)
                         }
@@ -203,25 +206,13 @@ fun MapScreenContent(
                 }
             ) {
                 userRealtimeLocation?.let {
-                    Marker(
-                        state = MarkerState(position = LatLng(it.latitude, it.longitude)),
-                        title = currentUser?.username ?: "Ma Position",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                    )
+                    Marker(state = MarkerState(position = LatLng(it.latitude, it.longitude)), title = currentUser?.username ?: "Ma Position", icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                 }
                 memberLocations.forEach { memberLoc ->
-                    Marker(
-                        state = MarkerState(position = LatLng(memberLoc.latitude, memberLoc.longitude)),
-                        title = "Membre ${memberLoc.userId}"
-                    )
+                    Marker(state = MarkerState(position = LatLng(memberLoc.latitude, memberLoc.longitude)), title = "Membre ${memberLoc.userId}")
                 }
                 pointsOfInterest.forEach { poi ->
-                    Marker(
-                        state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),
-                        title = poi.name,
-                        snippet = poi.description,
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
-                    )
+                    Marker(state = MarkerState(position = LatLng(poi.latitude, poi.longitude)), title = poi.name, snippet = poi.description, icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
                 }
             }
 
@@ -236,15 +227,8 @@ fun MapScreenContent(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Button(
-                        onClick = { isInAddPoiMode = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                    ) { Text("Annuler") }
-
-                    Button(onClick = {
-                        showAddPoiDialog = true
-                        isInAddPoiMode = false
-                    }) { Text("Confirmer l'emplacement") }
+                    Button(onClick = { isInAddPoiMode = false }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)) { Text("Annuler") }
+                    Button(onClick = { showAddPoiDialog = true; isInAddPoiMode = false }) { Text("Confirmer l'emplacement") }
                 }
             }
         }
