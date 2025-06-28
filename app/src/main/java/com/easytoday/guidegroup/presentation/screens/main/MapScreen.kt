@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,6 +52,7 @@ fun MapScreen(
     LaunchedEffect(groupId) {
         if (groupId != null) {
             viewModel.setGroupId(groupId)
+            // CORRECTION : S'assurer que le ChatViewModel connaît aussi le groupe
             chatViewModel.setGroupId(groupId)
         }
     }
@@ -140,6 +143,7 @@ fun MapScreenContent(
     var showAddPoiDialog by remember { mutableStateOf(false) }
     var isInAddPoiMode by remember { mutableStateOf(false) }
 
+    // CORRECTION : Le centrage automatique ne se fait que si l'utilisateur ne bouge pas la carte
     LaunchedEffect(userRealtimeLocation) {
         userRealtimeLocation?.let {
             if (!cameraPositionState.isMoving) {
@@ -188,6 +192,7 @@ fun MapScreenContent(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
                 uiSettings = MapUiSettings(zoomControlsEnabled = false),
+                // CORRECTION : UX améliorée pour le placement de POI par appui long
                 onMapLongClick = { latLng ->
                     if (!isInAddPoiMode) {
                         coroutineScope.launch {

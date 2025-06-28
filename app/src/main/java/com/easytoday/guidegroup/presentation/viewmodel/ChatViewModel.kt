@@ -43,9 +43,9 @@ class ChatViewModel @Inject constructor(
         observeMessages()
     }
 
-    // NOUVELLE FONCTION pour permettre la synchronisation de l'ID du groupe
-    fun setGroupId(id: String) {
-        if (_groupId.value != id) {
+    // CORRECTION : Permet à un autre écran de configurer l'ID du groupe pour ce ViewModel.
+    fun setGroupId(id: String?) {
+        if (id != null && _groupId.value != id) {
             _groupId.value = id
         }
     }
