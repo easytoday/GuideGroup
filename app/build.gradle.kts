@@ -29,12 +29,12 @@ plugins {
 
 android {
     namespace = "com.easytoday.guidegroup"
-    compileSdk = 35
+    compileSdk = 34  //was 35
 
     defaultConfig {
         applicationId = "com.easytoday.guidegroup"
         minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = 35
+        targetSdk = 34  //was 35
         versionCode = 1
         versionName = "1.0"
 
@@ -403,6 +403,10 @@ afterEvaluate {
 
         // Turbine est utilisé dans les tests : Turbine est conçu pour tester les Flows
         testImplementation("app.cash.turbine:turbine:1.1.0")
+
+        // pour la classe SeeddatabaseUseCase
+        implementation("com.google.code.gson:gson:2.10.1")
+
     }
 
 // Appliquez le plugin Google Services ici (doit être après le bloc dependencies)

@@ -5,8 +5,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,8 +20,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -39,52 +43,24 @@ fun ChatScreen(
     navController: NavController,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val messages by viewModel.messages.collectAsState()
     val sendMessageState by viewModel.sendMessageState.collectAsState()
     val uploadMediaState by viewModel.uploadMediaState.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     val groupId by viewModel.groupId.collectAsState()
-    val listState = rememberLazyListState()
-
-    val pickImageLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let { viewModel.sendMediaMessage(it, Message.MediaType.IMAGE) }
-    }
-    val pickVideoLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let { viewModel.sendMediaMessage(it, Message.MediaType.VIDEO) }
-    }
-
-    LaunchedEffect(sendMessageState) {
-        if (sendMessageState is Result.Error) {
-            Toast.makeText(context, "Erreur: ${(sendMessageState as Result.Error).message}", Toast.LENGTH_LONG).show()
-            viewModel.resetSendMessageState()
-        }
-    }
-
-    LaunchedEffect(uploadMediaState) {
-        if (uploadMediaState is Result.Error) {
-            Toast.makeText(context, "Erreur upload: ${(uploadMediaState as Result.Error).message}", Toast.LENGTH_LONG).show()
-            viewModel.resetUploadMediaState()
-        }
-    }
-
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
-        }
-    }
 
     ChatScreenContent(
         groupId = groupId,
         messages = messages,
-        listState = listState,
         currentUser = currentUser,
         sendMessageState = sendMessageState,
         uploadMediaState = uploadMediaState,
         onSendMessage = { text -> viewModel.sendMessage(text) },
-        onPickImage = { pickImageLauncher.launch("image/*") },
-        onPickVideo = { pickVideoLauncher.launch("video/*") },
-        onNavigateBack = { navController.popBackStack() }
+        onPickImage = { uri -> viewModel.sendMediaMessage(uri, Message.MediaType.IMAGE) },
+        onPickVideo = { uri -> viewModel.sendMediaMessage(uri, Message.MediaType.VIDEO) },
+        onNavigateBack = { navController.popBackStack() },
+        onResetSendState = { viewModel.resetSendMessageState() },
+        onResetUploadState = { viewModel.resetUploadMediaState() }
     )
 }
 
@@ -96,17 +72,54 @@ fun ChatScreen(
 fun ChatScreenContent(
     groupId: String?,
     messages: List<Message>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
     currentUser: User?,
     sendMessageState: Result<Unit>,
     uploadMediaState: Result<String>,
     onSendMessage: (String) -> Unit,
-    onPickImage: () -> Unit,
-    onPickVideo: () -> Unit,
-    onNavigateBack: () -> Unit
+    onPickImage: (Uri) -> Unit,
+    onPickVideo: (Uri) -> Unit,
+    onNavigateBack: () -> Unit,
+    onResetSendState: () -> Unit,
+    onResetUploadState: () -> Unit
 ) {
     var messageInput by remember { mutableStateOf("") }
     var showMediaOptions by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
+    val pickImageLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            showMediaOptions = false
+            onPickImage(it)
+        }
+    }
+    val pickVideoLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            showMediaOptions = false
+            onPickVideo(it)
+        }
+    }
+
+    LaunchedEffect(sendMessageState) {
+        if (sendMessageState is Result.Error) {
+            Toast.makeText(context, "Erreur: ${sendMessageState.message}", Toast.LENGTH_LONG).show()
+            onResetSendState()
+        }
+    }
+    LaunchedEffect(uploadMediaState) {
+        if (uploadMediaState is Result.Error) {
+            Toast.makeText(context, "Erreur upload: ${uploadMediaState.message}", Toast.LENGTH_LONG).show()
+            onResetUploadState()
+        }
+    }
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -131,6 +144,8 @@ fun ChatScreenContent(
                         if (messageInput.isNotBlank()) {
                             onSendMessage(messageInput)
                             messageInput = ""
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
                         }
                     },
                     onAttachMedia = { showMediaOptions = !showMediaOptions },
@@ -138,22 +153,24 @@ fun ChatScreenContent(
                 )
                 if (showMediaOptions) {
                     MediaOptionsPanel(
-                        onPickImage = { onPickImage(); showMediaOptions = false },
-                        onPickVideo = { onPickVideo(); showMediaOptions = false }
+                        onPickImage = { pickImageLauncher.launch("image/*") },
+                        onPickVideo = { pickVideoLauncher.launch("video/*") }
                     )
                 }
             }
         }
     ) { paddingValues ->
-        if (messages.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("Aucun message. Commencez la conversation !")
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 8.dp),
-                state = listState
-            ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 8.dp),
+            state = listState
+        ) {
+            if (messages.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Aucun message. Commencez la conversation !")
+                    }
+                }
+            } else {
                 items(messages) { message ->
                     MessageBubble(message = message, isCurrentUser = message.senderId == currentUser?.id)
                 }
@@ -161,8 +178,6 @@ fun ChatScreenContent(
         }
     }
 }
-
-// CORRECTION : Définitions des composables qui manquaient
 
 @Composable
 fun MessageBubble(message: Message, isCurrentUser: Boolean) {
@@ -173,29 +188,49 @@ fun MessageBubble(message: Message, isCurrentUser: Boolean) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalAlignment = alignment
     ) {
-        Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = backgroundColor)) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                if (!isCurrentUser) {
-                    Text(
-                        text = message.senderName,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+        Card(
+            modifier = Modifier.widthIn(max = 300.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = backgroundColor)
+        ) {
+            when (message.mediaType) {
+                Message.MediaType.POI -> {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).clickable { /* TODO */ }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.LocationOn, contentDescription = "POI", tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = message.text ?: "Point d'intérêt",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
-                message.text?.let { Text(text = it) }
-                message.timestamp?.let {
-                    Text(
-                        text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(it),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
-                    )
+                else -> {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        if (!isCurrentUser) {
+                            Text(
+                                text = message.senderName,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        message.text?.let { Text(text = it) }
+                        message.timestamp?.let {
+                            Text(
+                                text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(it),
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MessageInput(
     messageInput: String,
@@ -218,7 +253,11 @@ fun MessageInput(
             placeholder = { Text("Votre message...") },
             shape = RoundedCornerShape(24.dp)
         )
-        IconButton(onClick = onSendMessage, enabled = messageInput.isNotBlank() && !isSending) {
+        Spacer(modifier = Modifier.width(8.dp))
+        FilledIconButton(
+            onClick = onSendMessage,
+            enabled = messageInput.isNotBlank() && !isSending
+        ) {
             if (isSending) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
             } else {
@@ -240,27 +279,26 @@ fun MediaOptionsPanel(onPickImage: () -> Unit, onPickVideo: () -> Unit) {
     }
 }
 
-// La Preview
 @Preview(showBackground = true)
 @Composable
 fun PreviewChatScreen() {
     val fakeMessages = listOf(
         Message(id="1", senderId="user2", senderName="Bob", text="Salut tout le monde!", timestamp= Date()),
         Message(id="2", senderId="user1", senderName="Alice (Moi)", text="Hey! Bien arrivé?", timestamp= Date()),
-        Message(id="3", senderId="user2", senderName="Bob", text="Oui, parfait! On se retrouve où? Le texte de ce message est un peu plus long pour voir comment la bulle de chat réagit.", timestamp= Date())
     )
     val fakeUser = User(id="user1", username="Alice (Moi)")
 
     ChatScreenContent(
         groupId = "preview_group",
         messages = fakeMessages,
-        listState = rememberLazyListState(),
         currentUser = fakeUser,
         sendMessageState = Result.Initial,
         uploadMediaState = Result.Initial,
         onSendMessage = {},
         onPickImage = {},
         onPickVideo = {},
-        onNavigateBack = {}
+        onNavigateBack = {},
+        onResetSendState = {},
+        onResetUploadState = {}
     )
 }

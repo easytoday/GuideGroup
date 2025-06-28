@@ -97,6 +97,7 @@ class MessageRepositoryImpl @Inject constructor(
                 Message.MediaType.IMAGE -> "jpg"
                 Message.MediaType.AUDIO -> "mp3"
                 Message.MediaType.VIDEO -> "mp4"
+                Message.MediaType.POI -> "txt"
             }
             val fileName = "${UUID.randomUUID()}.$fileExtension"
             val storageRef = firebaseStorage.reference

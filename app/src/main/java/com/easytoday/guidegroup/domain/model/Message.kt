@@ -16,6 +16,7 @@ import java.util.Date
  * @param mediaUrl L'URL du média associé au message (peut être null si c'est du texte).
  * @param mediaType Le type de média (image, audio, vidéo).
  * @param timestamp Le horodatage de l'envoi du message.
+ * @param poiId Le point d'intérêt sur la carte
  */
 data class Message(
     @DocumentId val id: String = "",
@@ -25,10 +26,12 @@ data class Message(
     val text: String? = null,
     val mediaUrl: String? = null,
     val mediaType: MediaType? = null,
-    @ServerTimestamp val timestamp: Date? = null
+    @ServerTimestamp val timestamp: Date? = null,
+    val poiId: String? = null // NOUVEAU
 ) {
     enum class MediaType {
-        TEXT, IMAGE, AUDIO, VIDEO
+        TEXT, IMAGE, AUDIO, VIDEO,
+        POI // NOUVEAU
     }
 
     // Constructeur sans argument pour Firebase Firestore si nécessaire.

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -23,6 +24,8 @@ import com.easytoday.guidegroup.presentation.navigation.Screen
 import com.easytoday.guidegroup.presentation.viewmodel.AuthViewModel
 import com.easytoday.guidegroup.presentation.viewmodel.HomeViewModel
 
+import com.easytoday.guidegroup.BuildConfig // <-- IMPORT OBLIGATOIRE
+
 /**
  * Écran "intelligent" (Smart Component).
  * Son rôle est de collecter les états des ViewModels et de les passer à l'écran d'affichage.
@@ -38,6 +41,14 @@ fun HomeScreen(
     val groupsState by homeViewModel.groups.collectAsState()
     val currentUser by homeViewModel.currentUser.collectAsState()
     val context = LocalContext.current
+    val seedingState by homeViewModel.seedingState.collectAsState() // <-- Collecter le nouvel état
+
+    // Afficher un Toast pour le feedback du seeding
+    LaunchedEffect(seedingState) {
+        if (seedingState.isNotBlank()) {
+            Toast.makeText(context, seedingState, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Appeler le composant d'affichage "stupide" en lui passant les états
     HomeScreenContent(
@@ -55,7 +66,10 @@ fun HomeScreen(
         onRetry = {
             homeViewModel.fetchGroups()
             Toast.makeText(context, "Tentative de rechargement...", Toast.LENGTH_SHORT).show()
-        }
+        },
+        onSeedDatabaseClick = {
+            homeViewModel.seedDatabase()
+        } // <-- Passer la nouvelle fonction
     )
 }
 
@@ -70,7 +84,8 @@ fun HomeScreenContent(
     currentUser: User?,
     onGroupClick: (Group) -> Unit,
     onLogoutClick: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onSeedDatabaseClick: () -> Unit // <-- AJOUTER le nouveau paramètre lambda
 ) {
     Column(
         modifier = Modifier
@@ -117,6 +132,18 @@ fun HomeScreenContent(
         }
 
         Spacer(modifier = Modifier.weight(1f)) // Pousse le bouton de déconnexion en bas
+
+        // AJOUT : Le bouton secret de seeding
+        if (BuildConfig.DEBUG) { // N'affiche ce bouton que pour les builds de debug
+            Button(onClick = onSeedDatabaseClick, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)) {
+                Text("SEED DATABASE (DEBUG)")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        Button(onClick = onLogoutClick) {
+            Text("Se déconnecter")
+        }
 
         Button(onClick = onLogoutClick) {
             Text("Se déconnecter")
@@ -169,7 +196,8 @@ fun PreviewHomeScreenSuccess() {
         currentUser = fakeUser,
         onGroupClick = {},
         onLogoutClick = {},
-        onRetry = {}
+        onRetry = {},
+        onSeedDatabaseClick = {} // <-- CORRECTION : Ajouter le paramètre manquant
     )
 }
 
@@ -181,7 +209,8 @@ fun PreviewHomeScreenLoading() {
         currentUser = User(username = "Ala"),
         onGroupClick = {},
         onLogoutClick = {},
-        onRetry = {}
+        onRetry = {},
+        onSeedDatabaseClick = {} // <-- CORRECTION : Ajouter le paramètre manquant
     )
 }
 
@@ -193,6 +222,7 @@ fun PreviewHomeScreenError() {
         currentUser = User(username = "Ala"),
         onGroupClick = {},
         onLogoutClick = {},
-        onRetry = {}
+        onRetry = {},
+        onSeedDatabaseClick = {} // <-- CORRECTION : Ajouter le paramètre manquant
     )
 }

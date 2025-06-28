@@ -28,10 +28,14 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+import com.easytoday.guidegroup.domain.usecase.SeedDatabaseUseCase // <-- AJOUTER
+
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val groupRepository: GroupRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val seedDatabaseUseCase: SeedDatabaseUseCase // <-- CORRECTION : Injecter le Use Case
 ) : ViewModel() {
 
     private val _groups = MutableStateFlow<Result<List<Group>>>(Result.Loading as Result<List<Group>>)
@@ -39,6 +43,10 @@ class HomeViewModel @Inject constructor(
 
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+
+    // AJOUT : État pour le seeding
+    private val _seedingState = MutableStateFlow("")
+    val seedingState: StateFlow<String> = _seedingState.asStateFlow()
 
     init {
         fetchGroups()
@@ -107,6 +115,21 @@ class HomeViewModel @Inject constructor(
                     is Result.Initial -> null // Gérer l'état Initial ici aussi si nécessaire
                 }
             }.launchIn(viewModelScope)
+        }
+    }
+
+
+    // AJOUT : Nouvelle fonction pour déclencher le seeding
+    fun seedDatabase() {
+        viewModelScope.launch {
+            try {
+                _seedingState.value = "Seeding en cours..."
+                seedDatabaseUseCase()
+                _seedingState.value = "Seeding terminé avec succès !"
+                fetchGroups() // Rafraîchir la liste des groupes après le seeding
+            } catch (e: Exception) {
+                _seedingState.value = "Erreur pendant le seeding: ${e.message}"
+            }
         }
     }
 
