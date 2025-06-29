@@ -5,6 +5,7 @@ import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
@@ -27,7 +28,7 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             emit(Result.Error(e.message ?: "Unknown sign-up error", e))
         }
-    }
+    }.flowOn(Dispatchers.IO) // CORRIGÉ : Assure l'exécution en arrière-plan
 
     override suspend fun signIn(email: String, password: String): Flow<Result<User>> = flow {
         emit(Result.Loading)
@@ -44,7 +45,7 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             emit(Result.Error(e.message ?: "Unknown sign-in error", e))
         }
-    }
+    }.flowOn(Dispatchers.IO) // CORRIGÉ : Assure l'exécution en arrière-plan
 
     override suspend fun signOut(): Flow<Result<Unit>> = flow {
         emit(Result.Loading)
@@ -54,7 +55,7 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             emit(Result.Error(e.message ?: "Unknown sign-out error", e))
         }
-    }
+    }.flowOn(Dispatchers.IO) // CORRIGÉ : Assure l'exécution en arrière-plan
 
     override fun getCurrentUser(): Flow<Result<User?>> {
         return callbackFlow {
@@ -68,15 +69,10 @@ class AuthRepositoryImpl @Inject constructor(
                 flowOf(Result.Success(null))
             } else {
                 firestoreHelper.getDocumentAsFlow<User>(USERS_COLLECTION, userId)
-                    .map { user ->
-                        // La correction est ici : on spécifie explicitement le type de retour général.
-                        Result.Success(user) as Result<User?>
-                    }
-                    .catch { e ->
-                        emit(Result.Error("Failed to fetch user data.", e))
-                    }
+                    .map { user -> Result.Success(user) as Result<User?> }
+                    .catch { e -> emit(Result.Error("Failed to fetch user data.", e)) }
             }
-        }
+        }.flowOn(Dispatchers.IO) // CORRIGÉ : Assure l'exécution en arrière-plan
     }
 
     override fun getCurrentUserId(): Flow<Result<String?>> = callbackFlow {
@@ -85,5 +81,5 @@ class AuthRepositoryImpl @Inject constructor(
         }
         firestoreHelper.auth.addAuthStateListener(listener)
         awaitClose { firestoreHelper.auth.removeAuthStateListener(listener) }
-    }
+    }.flowOn(Dispatchers.IO) // CORRIGÉ : Assure l'exécution en arrière-plan
 }
