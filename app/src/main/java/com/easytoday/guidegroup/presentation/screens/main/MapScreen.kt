@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,7 +27,7 @@ import com.easytoday.guidegroup.domain.model.Location as DomainLocation
 import com.easytoday.guidegroup.domain.model.PointOfInterest
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
-import com.easytoday.guidegroup.presentation.viewmodel.ChatViewModel
+import com.easytoday.guidegroup.presentation.navigation.Screen
 import com.easytoday.guidegroup.presentation.viewmodel.MapViewModel
 import com.easytoday.guidegroup.service.LocationTrackingService
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -40,8 +42,7 @@ import java.util.Date
 fun MapScreen(
     navController: NavController,
     groupId: String?,
-    viewModel: MapViewModel = hiltViewModel(),
-    chatViewModel: ChatViewModel = hiltViewModel()
+    viewModel: MapViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -49,27 +50,10 @@ fun MapScreen(
     LaunchedEffect(groupId) {
         if (groupId != null) {
             viewModel.setGroupId(groupId)
-            chatViewModel.setGroupId(groupId)
         }
     }
 
-    val currentUser by viewModel.currentUser.collectAsState()
-    val userRealtimeLocation by viewModel.userRealtimeLocation.collectAsState()
-    val memberLocations by viewModel.memberLocations.collectAsState()
-    val pointsOfInterest by viewModel.pointsOfInterest.collectAsState()
-    val currentGroup by viewModel.currentGroup.collectAsState()
     val addPoiState by viewModel.addPoiState.collectAsState()
-    var isTrackingLocation by remember { mutableStateOf(false) }
-
-    val requestPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)) {
-            Toast.makeText(context, "Permission accordée.", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Permission refusée.", Toast.LENGTH_LONG).show()
-        }
-    }
 
     LaunchedEffect(addPoiState) {
         if (addPoiState is Result.Success) {
@@ -82,36 +66,30 @@ fun MapScreen(
                 duration = SnackbarDuration.Long
             )
             if (result == SnackbarResult.ActionPerformed) {
-                chatViewModel.sharePoiInChat(poiId, poiName, currentUser, groupId)
-                Toast.makeText(context, "Point d'intérêt partagé dans le chat !", Toast.LENGTH_SHORT).show()
+                viewModel.preparePoiForSharing(poiId, poiName)
+                navController.navigate(Screen.ChatScreen.createRoute(groupId!!))
             }
             viewModel.resetAddPoiState()
         }
     }
 
     MapScreenContent(
-        currentUser = currentUser,
-        currentGroup = currentGroup,
-        userRealtimeLocation = userRealtimeLocation,
-        memberLocations = memberLocations,
-        pointsOfInterest = pointsOfInterest,
-        isTracking = isTrackingLocation,
+        currentUser = viewModel.currentUser.collectAsState().value,
+        currentGroup = viewModel.currentGroup.collectAsState().value,
+        userRealtimeLocation = viewModel.userRealtimeLocation.collectAsState().value,
+        memberLocations = viewModel.memberLocations.collectAsState().value,
+        pointsOfInterest = viewModel.pointsOfInterest.collectAsState().value,
+        isTracking = false, // Cet état local sera géré dans le content
         snackbarHostState = snackbarHostState,
         onNavigateBack = { navController.popBackStack() },
         onAddPoi = { name, desc, lat, lon ->
             viewModel.addPointOfInterest(name, desc, lat, lon)
         },
-        onToggleTracking = {
-            if (isTrackingLocation) {
-                stopLocationTrackingService(context)
-                isTrackingLocation = false
+        onToggleTracking = { isTracking ->
+            if (isTracking) {
+                startLocationTrackingService(context, groupId)
             } else {
-                if (context.hasLocationPermission()) {
-                    startLocationTrackingService(context, groupId)
-                    isTrackingLocation = true
-                } else {
-                    requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
-                }
+                stopLocationTrackingService(context)
             }
         }
     )
@@ -129,12 +107,13 @@ fun MapScreenContent(
     snackbarHostState: SnackbarHostState,
     onNavigateBack: () -> Unit,
     onAddPoi: (name: String, description: String, latitude: Double, longitude: Double) -> Unit,
-    onToggleTracking: () -> Unit
+    onToggleTracking: (Boolean) -> Unit
 ) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(48.8566, 2.3522), 10f)
     }
     val coroutineScope = rememberCoroutineScope()
+    var isTrackingState by remember { mutableStateOf(isTracking) }
 
     var showAddPoiDialog by remember { mutableStateOf(false) }
     var isInAddPoiMode by remember { mutableStateOf(false) }
@@ -148,7 +127,6 @@ fun MapScreenContent(
         }
     }
 
-    // CORRECTION : Détecter l'interaction utilisateur en observant l'état de la caméra
     if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
         hasUserInteractedWithMap = true
     }
@@ -178,9 +156,12 @@ fun MapScreenContent(
                     }) { Icon(Icons.Default.MyLocation, contentDescription = "Recentrer") }
 
                     FloatingActionButton(
-                        onClick = onToggleTracking,
-                        containerColor = if (isTracking) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
-                    ) { Icon(if (isTracking) Icons.Default.Stop else Icons.Default.PlayArrow, contentDescription = "Suivi") }
+                        onClick = {
+                            isTrackingState = !isTrackingState
+                            onToggleTracking(isTrackingState)
+                        },
+                        containerColor = if (isTrackingState) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+                    ) { Icon(if (isTrackingState) Icons.Default.Stop else Icons.Default.PlayArrow, contentDescription = "Suivi") }
 
                     FloatingActionButton(onClick = { isInAddPoiMode = true }) {
                         Icon(Icons.Default.AddLocation, contentDescription = "Ajouter un point d'intérêt")
@@ -193,8 +174,8 @@ fun MapScreenContent(
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
-                // CORRECTION : Activer les boutons de zoom natifs
-                uiSettings = MapUiSettings(zoomControlsEnabled = false),
+                uiSettings = MapUiSettings(zoomControlsEnabled = true),
+                contentPadding = PaddingValues(bottom = 80.dp, end = 80.dp),
                 onMapLongClick = { latLng ->
                     if (!isInAddPoiMode) {
                         hasUserInteractedWithMap = true

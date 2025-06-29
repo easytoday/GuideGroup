@@ -9,6 +9,7 @@ import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.domain.repository.AuthRepository
 import com.easytoday.guidegroup.domain.repository.MessageRepository
+import com.easytoday.guidegroup.domain.repository.SharedDataRepository
 import com.easytoday.guidegroup.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -20,6 +21,7 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val authRepository: AuthRepository,
+    private val sharedDataRepository: SharedDataRepository, // INJECTION
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -41,6 +43,18 @@ class ChatViewModel @Inject constructor(
     init {
         observeCurrentUser()
         observeMessages()
+        checkAndSharePoiOnStart()
+    }
+
+    private fun checkAndSharePoiOnStart() {
+        viewModelScope.launch {
+            val poiToShare = sharedDataRepository.consumePoiToShare()
+            if (poiToShare != null) {
+                if (poiToShare.groupId == _groupId.value) {
+                    sharePoiInChat(poiToShare.poiId, poiToShare.poiName)
+                }
+            }
+        }
     }
 
     fun setGroupId(id: String?) {
@@ -81,7 +95,8 @@ class ChatViewModel @Inject constructor(
                 senderId = sender.id,
                 senderName = sender.username,
                 text = text,
-                mediaType = Message.MediaType.TEXT
+                mediaType = Message.MediaType.TEXT,
+                groupId = currentGroupId
             )
 
             _sendMessageState.value = Result.Loading
@@ -106,7 +121,8 @@ class ChatViewModel @Inject constructor(
                         senderId = sender.id,
                         senderName = sender.username,
                         mediaUrl = uploadResult.data,
-                        mediaType = mediaType
+                        mediaType = mediaType,
+                        groupId = currentGroupId
                     )
                     sendMessageUseCase(currentGroupId, message).collect { sendResult ->
                         _sendMessageState.value = sendResult
@@ -120,9 +136,9 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    // CORRECTION : La fonction accepte maintenant tous les paramètres nécessaires pour être autonome.
-    fun sharePoiInChat(poiId: String, poiName: String, sender: User?, groupId: String?) {
-        if (sender == null || groupId == null) return // Vérification de sécurité
+    fun sharePoiInChat(poiId: String, poiName: String) {
+        val currentGroupId = _groupId.value ?: return
+        val sender = _currentUser.value ?: return
 
         viewModelScope.launch {
             val message = Message(
@@ -131,11 +147,11 @@ class ChatViewModel @Inject constructor(
                 text = "Point d'intérêt partagé : $poiName",
                 mediaType = Message.MediaType.POI,
                 poiId = poiId,
-                groupId = groupId // S'assurer que le message a le bon ID de groupe
+                groupId = currentGroupId
             )
 
             _sendMessageState.value = Result.Loading
-            sendMessageUseCase(groupId, message).collect { result ->
+            sendMessageUseCase(currentGroupId, message).collect { result ->
                 _sendMessageState.value = result
                 if (result !is Result.Loading) {
                     resetSendMessageState()

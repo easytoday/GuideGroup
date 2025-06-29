@@ -8,11 +8,7 @@ import com.easytoday.guidegroup.domain.model.Group
 import com.easytoday.guidegroup.domain.model.PointOfInterest
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
-import com.easytoday.guidegroup.domain.repository.AuthRepository
-import com.easytoday.guidegroup.domain.repository.GroupRepository
-import com.easytoday.guidegroup.domain.repository.LocationClient
-import com.easytoday.guidegroup.domain.repository.LocationRepository
-import com.easytoday.guidegroup.domain.repository.PointOfInterestRepository
+import com.easytoday.guidegroup.domain.repository.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -26,6 +22,7 @@ class MapViewModel @Inject constructor(
     private val pointOfInterestRepository: PointOfInterestRepository,
     private val authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
+    private val sharedDataRepository: SharedDataRepository, // INJECTION
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -59,7 +56,6 @@ class MapViewModel @Inject constructor(
         observePointsOfInterest()
     }
 
-    // CORRECTION : Ajout de la fonction manquante
     fun setGroupId(id: String?) {
         if (id != null && _currentGroupId.value != id) {
             _currentGroupId.value = id
@@ -151,6 +147,12 @@ class MapViewModel @Inject constructor(
                 _addPoiState.value = Result.Error("Échec de l'ajout du POI: ${e.message}", e)
             }
         }
+    }
+
+    fun preparePoiForSharing(poiId: String, poiName: String) {
+        val groupId = _currentGroupId.value ?: return
+        val poiToShare = PoiToShare(poiId, poiName, groupId)
+        sharedDataRepository.setPoiToShare(poiToShare)
     }
 
     fun resetAddPoiState() {
