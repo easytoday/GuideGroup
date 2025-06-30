@@ -22,11 +22,10 @@ class MapViewModel @Inject constructor(
     private val pointOfInterestRepository: PointOfInterestRepository,
     private val authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
-    private val sharedDataRepository: SharedDataRepository, // INJECTION
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _currentGroupId = MutableStateFlow<String?>(null)
+    private val _currentGroupId = MutableStateFlow<String?>(savedStateHandle.get<String>("groupId"))
     val currentGroupId: StateFlow<String?> = _currentGroupId.asStateFlow()
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -47,13 +46,42 @@ class MapViewModel @Inject constructor(
     private val _addPoiState = MutableStateFlow<Result<String>>(Result.Initial)
     val addPoiState: StateFlow<Result<String>> = _addPoiState.asStateFlow()
 
+    // CORRECTION : La propriété pour gérer le focus sur le POI
+    val focusOnPoi: StateFlow<String?> = savedStateHandle.getStateFlow("focusOnPoi", null)
+
     init {
-        setGroupId(savedStateHandle.get<String>("groupId"))
         observeCurrentUser()
-        observeCurrentGroup()
         observeUserRealtimeLocation()
-        observeMemberLocations()
-        observePointsOfInterest()
+
+        viewModelScope.launch {
+            _currentGroupId.filterNotNull().collect { groupId ->
+                observeGroupData(groupId)
+            }
+        }
+    }
+
+    private fun observeGroupData(groupId: String) {
+        groupRepository.getGroup(groupId)
+            .onEach { _currentGroup.value = it }
+            .launchIn(viewModelScope)
+
+        pointOfInterestRepository.getGroupPointsOfInterest(groupId)
+            .onEach { _pointsOfInterest.value = it }
+            .launchIn(viewModelScope)
+
+        combine(
+            groupRepository.getGroup(groupId).filterNotNull(),
+            _currentUser.filterNotNull()
+        ) { group, user ->
+            group.memberIds.filter { it != user.id }
+        }.flatMapLatest { memberIds ->
+            if (memberIds.isNotEmpty()) {
+                locationRepository.getMemberLocations(groupId, memberIds)
+            } else {
+                flowOf(emptyList())
+            }
+        }.onEach { _memberLocations.value = it }
+            .launchIn(viewModelScope)
     }
 
     fun setGroupId(id: String?) {
@@ -70,69 +98,22 @@ class MapViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private fun observeCurrentGroup() {
-        _currentGroupId.flatMapLatest { groupId ->
-            if (groupId != null) {
-                groupRepository.getGroup(groupId)
-            } else {
-                emptyFlow()
-            }
-        }.onEach { group ->
-            _currentGroup.value = group
-        }.launchIn(viewModelScope)
-    }
-
     private fun observeUserRealtimeLocation() {
-        viewModelScope.launch {
-            locationClient.getLocationUpdates(5000L)
-                .distinctUntilChanged()
-                .catch { e -> Timber.e(e, "Error getting location updates") }
-                .collect { location ->
-                    _userRealtimeLocation.value = location
-                    _currentUser.value?.id?.let { userId ->
-                        locationRepository.updateLocation(
-                            com.easytoday.guidegroup.domain.model.Location(
-                                userId = userId,
-                                latitude = location.latitude,
-                                longitude = location.longitude
-                            )
+        locationClient.getLocationUpdates(5000L)
+            .distinctUntilChanged()
+            .catch { e -> Timber.e(e, "Error getting location updates") }
+            .onEach { location ->
+                _userRealtimeLocation.value = location
+                _currentUser.value?.id?.let { userId ->
+                    locationRepository.updateLocation(
+                        com.easytoday.guidegroup.domain.model.Location(
+                            userId = userId,
+                            latitude = location.latitude,
+                            longitude = location.longitude
                         )
-                    }
+                    )
                 }
-        }
-    }
-
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private fun observeMemberLocations() {
-        combine(_currentGroup, _currentUser) { group, currentUser ->
-            if (group != null && currentUser != null) {
-                val otherMemberIds = group.memberIds.filter { it != currentUser.id }
-                if (otherMemberIds.isNotEmpty()) {
-                    locationRepository.getMemberLocations(group.id, otherMemberIds)
-                } else {
-                    flowOf(emptyList())
-                }
-            } else {
-                flowOf(emptyList())
-            }
-        }.flatMapLatest { it }
-            .onEach { memberLocs ->
-                _memberLocations.value = memberLocs
             }.launchIn(viewModelScope)
-    }
-
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private fun observePointsOfInterest() {
-        _currentGroupId.flatMapLatest { groupId ->
-            if (groupId != null) {
-                pointOfInterestRepository.getGroupPointsOfInterest(groupId)
-            } else {
-                emptyFlow()
-            }
-        }.onEach { pois ->
-            _pointsOfInterest.value = pois
-        }.launchIn(viewModelScope)
     }
 
     fun addPointOfInterest(name: String, description: String, latitude: Double, longitude: Double) {
@@ -149,13 +130,12 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    fun preparePoiForSharing(poiId: String, poiName: String) {
-        val groupId = _currentGroupId.value ?: return
-        val poiToShare = PoiToShare(poiId, poiName, groupId)
-        sharedDataRepository.setPoiToShare(poiToShare)
-    }
-
     fun resetAddPoiState() {
         _addPoiState.value = Result.Initial
+    }
+
+    // CORRECTION : La fonction pour réinitialiser l'état de focus
+    fun poiFocused() {
+        savedStateHandle["focusOnPoi"] = null
     }
 }

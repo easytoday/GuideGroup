@@ -8,7 +8,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,6 +27,7 @@ import com.easytoday.guidegroup.domain.model.PointOfInterest
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.presentation.navigation.Screen
+import com.easytoday.guidegroup.presentation.viewmodel.ChatViewModel
 import com.easytoday.guidegroup.presentation.viewmodel.MapViewModel
 import com.easytoday.guidegroup.service.LocationTrackingService
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -36,13 +36,16 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.Date
 
 @Composable
 fun MapScreen(
     navController: NavController,
     groupId: String?,
-    viewModel: MapViewModel = hiltViewModel()
+    viewModel: MapViewModel = hiltViewModel(),
+    chatViewModel: ChatViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -50,9 +53,11 @@ fun MapScreen(
     LaunchedEffect(groupId) {
         if (groupId != null) {
             viewModel.setGroupId(groupId)
+            chatViewModel.setGroupId(groupId)
         }
     }
 
+    val currentUser by viewModel.currentUser.collectAsState()
     val addPoiState by viewModel.addPoiState.collectAsState()
 
     LaunchedEffect(addPoiState) {
@@ -66,21 +71,22 @@ fun MapScreen(
                 duration = SnackbarDuration.Long
             )
             if (result == SnackbarResult.ActionPerformed) {
-                viewModel.preparePoiForSharing(poiId, poiName)
-                navController.navigate(Screen.ChatScreen.createRoute(groupId!!))
+                navController.navigate(Screen.ChatScreen.createSharePoiRoute(groupId!!, poiId, poiName))
             }
             viewModel.resetAddPoiState()
         }
     }
 
     MapScreenContent(
-        currentUser = viewModel.currentUser.collectAsState().value,
+        currentUser = currentUser,
         currentGroup = viewModel.currentGroup.collectAsState().value,
         userRealtimeLocation = viewModel.userRealtimeLocation.collectAsState().value,
         memberLocations = viewModel.memberLocations.collectAsState().value,
         pointsOfInterest = viewModel.pointsOfInterest.collectAsState().value,
-        isTracking = false, // Cet état local sera géré dans le content
+        isTracking = false,
         snackbarHostState = snackbarHostState,
+        focusOnPoiId = viewModel.focusOnPoi.collectAsState().value,
+        onPoiFocused = { viewModel.poiFocused() },
         onNavigateBack = { navController.popBackStack() },
         onAddPoi = { name, desc, lat, lon ->
             viewModel.addPointOfInterest(name, desc, lat, lon)
@@ -91,6 +97,9 @@ fun MapScreen(
             } else {
                 stopLocationTrackingService(context)
             }
+        },
+        onSharePoiClick = { poi ->
+            navController.navigate(Screen.ChatScreen.createSharePoiRoute(groupId!!, poi.id, poi.name))
         }
     )
 }
@@ -105,9 +114,12 @@ fun MapScreenContent(
     pointsOfInterest: List<PointOfInterest>,
     isTracking: Boolean,
     snackbarHostState: SnackbarHostState,
+    focusOnPoiId: String?,
+    onPoiFocused: () -> Unit,
     onNavigateBack: () -> Unit,
     onAddPoi: (name: String, description: String, latitude: Double, longitude: Double) -> Unit,
-    onToggleTracking: (Boolean) -> Unit
+    onToggleTracking: (Boolean) -> Unit,
+    onSharePoiClick: (PointOfInterest) -> Unit
 ) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(48.8566, 2.3522), 10f)
@@ -124,6 +136,19 @@ fun MapScreenContent(
             userRealtimeLocation?.let {
                 cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f))
             }
+        }
+    }
+
+    LaunchedEffect(focusOnPoiId) {
+        if (focusOnPoiId != null) {
+            val poiToFocus = pointsOfInterest.find { it.id == focusOnPoiId }
+            poiToFocus?.let {
+                hasUserInteractedWithMap = true
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 17f)
+                )
+            }
+            onPoiFocused()
         }
     }
 
@@ -193,7 +218,21 @@ fun MapScreenContent(
                     Marker(state = MarkerState(position = LatLng(memberLoc.latitude, memberLoc.longitude)), title = "Membre ${memberLoc.userId}")
                 }
                 pointsOfInterest.forEach { poi ->
-                    Marker(state = MarkerState(position = LatLng(poi.latitude, poi.longitude)), title = poi.name, snippet = poi.description, icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+                    MarkerInfoWindow(
+                        state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),
+                        title = poi.name,
+                        snippet = poi.description,
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(poi.name, style = MaterialTheme.typography.titleMedium)
+                            Text(poi.description, style = MaterialTheme.typography.bodySmall)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { onSharePoiClick(poi) }) {
+                                Text("Partager")
+                            }
+                        }
+                    }
                 }
             }
 
@@ -325,8 +364,11 @@ fun PreviewMapScreenContent() {
         pointsOfInterest = fakePois,
         isTracking = true,
         snackbarHostState = remember { SnackbarHostState() },
+        focusOnPoiId = null,
+        onPoiFocused = {},
         onNavigateBack = {},
         onAddPoi = { _, _, _, _ -> },
-        onToggleTracking = {}
+        onToggleTracking = {},
+        onSharePoiClick = {}
     )
 }

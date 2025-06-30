@@ -9,7 +9,6 @@ import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.domain.repository.AuthRepository
 import com.easytoday.guidegroup.domain.repository.MessageRepository
-import com.easytoday.guidegroup.domain.repository.SharedDataRepository
 import com.easytoday.guidegroup.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -21,8 +20,7 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val authRepository: AuthRepository,
-    private val sharedDataRepository: SharedDataRepository, // INJECTION
-    private val savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _groupId = MutableStateFlow(savedStateHandle.get<String>("groupId"))
@@ -43,18 +41,6 @@ class ChatViewModel @Inject constructor(
     init {
         observeCurrentUser()
         observeMessages()
-        checkAndSharePoiOnStart()
-    }
-
-    private fun checkAndSharePoiOnStart() {
-        viewModelScope.launch {
-            val poiToShare = sharedDataRepository.consumePoiToShare()
-            if (poiToShare != null) {
-                if (poiToShare.groupId == _groupId.value) {
-                    sharePoiInChat(poiToShare.poiId, poiToShare.poiName)
-                }
-            }
-        }
     }
 
     fun setGroupId(id: String?) {
@@ -64,13 +50,11 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun observeCurrentUser() {
-        viewModelScope.launch {
-            authRepository.getCurrentUser().collect { result ->
-                if (result is Result.Success) {
-                    _currentUser.value = result.data
-                }
+        authRepository.getCurrentUser().onEach { result ->
+            if (result is Result.Success) {
+                _currentUser.value = result.data
             }
-        }
+        }.launchIn(viewModelScope)
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -98,7 +82,6 @@ class ChatViewModel @Inject constructor(
                 mediaType = Message.MediaType.TEXT,
                 groupId = currentGroupId
             )
-
             _sendMessageState.value = Result.Loading
             sendMessageUseCase(currentGroupId, message).collect { result ->
                 _sendMessageState.value = result
@@ -112,8 +95,8 @@ class ChatViewModel @Inject constructor(
     fun sendMediaMessage(uri: Uri, mediaType: Message.MediaType) {
         val currentGroupId = _groupId.value ?: return
         val sender = _currentUser.value ?: return
-
         viewModelScope.launch {
+            _uploadMediaState.value = Result.Loading
             messageRepository.uploadMedia(uri, mediaType, currentGroupId).collect { uploadResult ->
                 _uploadMediaState.value = uploadResult
                 if (uploadResult is Result.Success) {
@@ -136,10 +119,9 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun sharePoiInChat(poiId: String, poiName: String) {
+    // CORRECTION : La signature de la fonction est mise à jour pour accepter l'utilisateur.
+    fun sharePoiInChat(poiId: String, poiName: String, sender: User) {
         val currentGroupId = _groupId.value ?: return
-        val sender = _currentUser.value ?: return
-
         viewModelScope.launch {
             val message = Message(
                 senderId = sender.id,
@@ -149,21 +131,13 @@ class ChatViewModel @Inject constructor(
                 poiId = poiId,
                 groupId = currentGroupId
             )
-
-            _sendMessageState.value = Result.Loading
-            sendMessageUseCase(currentGroupId, message).collect { result ->
-                _sendMessageState.value = result
-                if (result !is Result.Loading) {
-                    resetSendMessageState()
-                }
-            }
+            sendMessageUseCase(currentGroupId, message).collect()
         }
     }
 
     fun resetSendMessageState() {
         _sendMessageState.value = Result.Initial
     }
-
     fun resetUploadMediaState() {
         _uploadMediaState.value = Result.Initial
     }

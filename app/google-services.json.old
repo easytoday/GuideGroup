@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1092512330063",
+    "project_id": "groupguide-hju20",
+    "storage_bucket": "groupguide-hju20.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092512330063:android:71e72099ac5ccceb8c153a",
+        "android_client_info": {
+          "package_name": "com.easytoday.guidegroup"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnj6EkXZEX56llX196wUxvMuqQkqTOkuI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -23,8 +23,8 @@ class SeedDatabaseUseCase @Inject constructor(
     suspend operator fun invoke() {
         // Étape 1 : Lire les fichiers JSON depuis le dossier assets
         val gson = Gson()
-        val mockUsersJson = context.assets.open("mock_users.json").bufferedReader().use { it.readText() }
-        val mockGroupsJson = context.assets.open("mock_groups.json").bufferedReader().use { it.readText() }
+        val mockUsersJson = context.assets.open("mock-users.json").bufferedReader().use { it.readText() }
+        val mockGroupsJson = context.assets.open("mock-groups.json").bufferedReader().use { it.readText() }
 
         val userListType = object : TypeToken<List<MockUser>>() {}.type
         val groupListType = object : TypeToken<List<MockGroup>>() {}.type

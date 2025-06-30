@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,13 +30,11 @@ import androidx.navigation.NavController
 import com.easytoday.guidegroup.domain.model.Message
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
+import com.easytoday.guidegroup.presentation.navigation.Screen
 import com.easytoday.guidegroup.presentation.viewmodel.ChatViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * Écran "intelligent" pour le chat.
- */
 @Composable
 fun ChatScreen(
     navController: NavController,
@@ -60,13 +57,13 @@ fun ChatScreen(
         onPickVideo = { uri -> viewModel.sendMediaMessage(uri, Message.MediaType.VIDEO) },
         onNavigateBack = { navController.popBackStack() },
         onResetSendState = { viewModel.resetSendMessageState() },
-        onResetUploadState = { viewModel.resetUploadMediaState() }
+        onResetUploadState = { viewModel.resetUploadMediaState() },
+        onPoiClick = { gid, poiId ->
+            navController.navigate(Screen.MapScreen.createFocusPoiRoute(gid, poiId))
+        }
     )
 }
 
-/**
- * Écran d'affichage "stupide" pour le chat.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreenContent(
@@ -80,7 +77,8 @@ fun ChatScreenContent(
     onPickVideo: (Uri) -> Unit,
     onNavigateBack: () -> Unit,
     onResetSendState: () -> Unit,
-    onResetUploadState: () -> Unit
+    onResetUploadState: () -> Unit,
+    onPoiClick: (groupId: String, poiId: String) -> Unit
 ) {
     var messageInput by remember { mutableStateOf("") }
     var showMediaOptions by remember { mutableStateOf(false) }
@@ -160,19 +158,34 @@ fun ChatScreenContent(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 8.dp),
-            state = listState
-        ) {
-            if (messages.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Aucun message. Commencez la conversation !")
+        // CORRECTION : Le LazyColumn est maintenant le seul enfant de la Column
+        // et a un weight(1f) pour prendre tout l'espace disponible, ce qui active le scroll.
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+                state = listState,
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                if (messages.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Aucun message. Commencez la conversation !")
+                        }
                     }
-                }
-            } else {
-                items(messages) { message ->
-                    MessageBubble(message = message, isCurrentUser = message.senderId == currentUser?.id)
+                } else {
+                    items(messages) { message ->
+                        MessageBubble(
+                            message = message,
+                            isCurrentUser = message.senderId == currentUser?.id,
+                            onPoiClick = {
+                                if (message.poiId != null && groupId != null) {
+                                    onPoiClick(groupId, message.poiId)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -180,7 +193,7 @@ fun ChatScreenContent(
 }
 
 @Composable
-fun MessageBubble(message: Message, isCurrentUser: Boolean) {
+fun MessageBubble(message: Message, isCurrentUser: Boolean, onPoiClick: () -> Unit) {
     val backgroundColor = if (isCurrentUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
     val alignment = if (isCurrentUser) Alignment.End else Alignment.Start
 
@@ -195,7 +208,11 @@ fun MessageBubble(message: Message, isCurrentUser: Boolean) {
         ) {
             when (message.mediaType) {
                 Message.MediaType.POI -> {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).clickable { /* TODO */ }) {
+                    Column(
+                        modifier = Modifier
+                            .clickable(onClick = onPoiClick)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.LocationOn, contentDescription = "POI", tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(8.dp))
@@ -270,7 +287,10 @@ fun MessageInput(
 @Composable
 fun MediaOptionsPanel(onPickImage: () -> Unit, onPickVideo: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         IconButton(onClick = onPickImage) { Icon(Icons.Default.Image, contentDescription = "Image") }
@@ -299,6 +319,7 @@ fun PreviewChatScreen() {
         onPickVideo = {},
         onNavigateBack = {},
         onResetSendState = {},
-        onResetUploadState = {}
+        onResetUploadState = {},
+        onPoiClick = { _, _ -> }
     )
 }
