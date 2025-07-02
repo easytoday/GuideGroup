@@ -1,8 +1,8 @@
-// app/src/main/java/com/easytoday/guidegroup/di/LocationModule.kt
 package com.easytoday.guidegroup.di
 
 import android.content.Context
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.LocationServices
 import dagger.Module
 import dagger.Provides
@@ -20,17 +20,23 @@ object LocationModule {
 
     /**
      * Fournit une instance Singleton de FusedLocationProviderClient.
-     * Hilt injectera le Context qualifié par @ApplicationContext automatiquement.
      */
     @Provides
     @Singleton
     fun provideFusedLocationProviderClient(
-        @ApplicationContext app: Context // Hilt fournit ce Context directement
+        @ApplicationContext app: Context
     ): FusedLocationProviderClient {
         return LocationServices.getFusedLocationProviderClient(app)
     }
 
-    // Vous pourriez avoir d'autres @Provides ou @Binds ici si nécessaire
+    /**
+     * Fournit une instance Singleton de GeofencingClient.
+     */
+    @Provides
+    @Singleton
+    fun provideGeofencingClient(
+        @ApplicationContext app: Context
+    ): GeofencingClient {
+        return LocationServices.getGeofencingClient(app)
+    }
 }
-
-

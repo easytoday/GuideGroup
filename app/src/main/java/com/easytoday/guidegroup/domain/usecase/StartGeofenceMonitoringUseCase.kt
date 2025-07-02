@@ -1,7 +1,7 @@
-// app/src/main/java/com/easytoday/guidegroup/domain/usecase/StartGeofenceMonitoringUseCase.kt
 package com.easytoday.guidegroup.domain.usecase
 
 import com.easytoday.guidegroup.domain.model.GeofenceArea
+import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.repository.GeofenceRepository
 import javax.inject.Inject
 
@@ -23,5 +23,3 @@ class StartGeofenceMonitoringUseCase @Inject constructor(
         return geofenceRepository.startMonitoringGeofence(geofenceArea)
     }
 }
-
-

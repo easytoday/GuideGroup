@@ -1,3 +1,4 @@
+// app/src/main/java/com/easytoday/guidegroup/domain/usecase/SeedDatabaseUseCase.kt
 package com.easytoday.guidegroup.domain.usecase
 
 import android.content.Context
@@ -35,8 +36,8 @@ class SeedDatabaseUseCase @Inject constructor(
         val createdUsers = mutableListOf<User>()
 
         // Étape 2 : Créer les utilisateurs dans Firebase Auth ET Firestore
-        // C'est crucial d'utiliser signUp pour que les deux services soient synchronisés.
         mockUsers.forEach { mockUser ->
+            // signUp retourne un Flow, donc .first() est correct ici.
             val result = authRepository.signUp(
                 email = mockUser.email,
                 password = "password123", // Mot de passe par défaut pour tous les utilisateurs de test
@@ -60,7 +61,8 @@ class SeedDatabaseUseCase @Inject constructor(
                 creatorId = guide.id,
                 memberIds = createdUsers.map { it.id }.shuffled().take(2) // Prend 2 membres au hasard
             )
-            groupRepository.createGroup(group).first() // Attendre la création
+            // CORRECTION : createGroup est maintenant une fonction suspendue directe. On retire .first().
+            groupRepository.createGroup(group)
         }
     }
 }

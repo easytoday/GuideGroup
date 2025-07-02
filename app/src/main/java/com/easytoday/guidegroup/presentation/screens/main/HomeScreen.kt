@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.easytoday.guidegroup.BuildConfig
 import com.easytoday.guidegroup.domain.model.Group
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
@@ -24,33 +25,23 @@ import com.easytoday.guidegroup.presentation.navigation.Screen
 import com.easytoday.guidegroup.presentation.viewmodel.AuthViewModel
 import com.easytoday.guidegroup.presentation.viewmodel.HomeViewModel
 
-import com.easytoday.guidegroup.BuildConfig // <-- IMPORT OBLIGATOIRE
-
-/**
- * Écran "intelligent" (Smart Component).
- * Son rôle est de collecter les états des ViewModels et de les passer à l'écran d'affichage.
- * C'est cette fonction qui est appelée par votre graphe de navigation.
- */
 @Composable
 fun HomeScreen(
     navController: NavController,
     homeViewModel: HomeViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
-    // Collecter les états depuis les ViewModels
     val groupsState by homeViewModel.groups.collectAsState()
     val currentUser by homeViewModel.currentUser.collectAsState()
     val context = LocalContext.current
-    val seedingState by homeViewModel.seedingState.collectAsState() // <-- Collecter le nouvel état
+    val seedingState by homeViewModel.seedingState.collectAsState()
 
-    // Afficher un Toast pour le feedback du seeding
     LaunchedEffect(seedingState) {
         if (seedingState.isNotBlank()) {
             Toast.makeText(context, seedingState, Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Appeler le composant d'affichage "stupide" en lui passant les états
     HomeScreenContent(
         groupsState = groupsState,
         currentUser = currentUser,
@@ -69,15 +60,10 @@ fun HomeScreen(
         },
         onSeedDatabaseClick = {
             homeViewModel.seedDatabase()
-        } // <-- Passer la nouvelle fonction
+        }
     )
 }
 
-/**
- * Écran d'affichage "stupide" (Dumb Component).
- * Ne connaît pas les ViewModels. Il ne fait qu'afficher les données qu'on lui passe.
- * C'est ce composant que nous allons prévisualiser.
- */
 @Composable
 fun HomeScreenContent(
     groupsState: Result<List<Group>>,
@@ -85,7 +71,7 @@ fun HomeScreenContent(
     onGroupClick: (Group) -> Unit,
     onLogoutClick: () -> Unit,
     onRetry: () -> Unit,
-    onSeedDatabaseClick: () -> Unit // <-- AJOUTER le nouveau paramètre lambda
+    onSeedDatabaseClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -131,10 +117,9 @@ fun HomeScreenContent(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f)) // Pousse le bouton de déconnexion en bas
+        Spacer(modifier = Modifier.weight(1f))
 
-        // AJOUT : Le bouton secret de seeding
-        if (BuildConfig.DEBUG) { // N'affiche ce bouton que pour les builds de debug
+        if (BuildConfig.DEBUG) {
             Button(onClick = onSeedDatabaseClick, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)) {
                 Text("SEED DATABASE (DEBUG)")
             }
@@ -144,16 +129,9 @@ fun HomeScreenContent(
         Button(onClick = onLogoutClick) {
             Text("Se déconnecter")
         }
-
-        Button(onClick = onLogoutClick) {
-            Text("Se déconnecter")
-        }
     }
 }
 
-/**
- * Composable pour un seul item de la liste de groupes.
- */
 @Composable
 fun GroupItem(group: Group, onClick: (Group) -> Unit) {
     Card(
@@ -177,11 +155,6 @@ fun GroupItem(group: Group, onClick: (Group) -> Unit) {
     }
 }
 
-
-/**
- * La fonction @Preview qui appelle maintenant le composant "stupide" avec des données factices.
- * Elle n'a plus besoin de ViewModel et ne plantera plus.
- */
 @Preview(showBackground = true, name = "État de Succès")
 @Composable
 fun PreviewHomeScreenSuccess() {
@@ -197,7 +170,7 @@ fun PreviewHomeScreenSuccess() {
         onGroupClick = {},
         onLogoutClick = {},
         onRetry = {},
-        onSeedDatabaseClick = {} // <-- CORRECTION : Ajouter le paramètre manquant
+        onSeedDatabaseClick = {}
     )
 }
 
@@ -210,7 +183,7 @@ fun PreviewHomeScreenLoading() {
         onGroupClick = {},
         onLogoutClick = {},
         onRetry = {},
-        onSeedDatabaseClick = {} // <-- CORRECTION : Ajouter le paramètre manquant
+        onSeedDatabaseClick = {}
     )
 }
 
@@ -223,6 +196,6 @@ fun PreviewHomeScreenError() {
         onGroupClick = {},
         onLogoutClick = {},
         onRetry = {},
-        onSeedDatabaseClick = {} // <-- CORRECTION : Ajouter le paramètre manquant
+        onSeedDatabaseClick = {}
     )
 }

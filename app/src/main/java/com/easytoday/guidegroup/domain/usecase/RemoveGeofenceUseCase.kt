@@ -1,6 +1,6 @@
-// app/src/main/java/com/easytoday/guidegroup/domain/usecase/RemoveGeofenceUseCase.kt
 package com.easytoday.guidegroup.domain.usecase
 
+import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.repository.GeofenceRepository
 import javax.inject.Inject
 
@@ -22,5 +22,3 @@ class RemoveGeofenceUseCase @Inject constructor(
         return geofenceRepository.removeGeofenceArea(geofenceId)
     }
 }
-
-

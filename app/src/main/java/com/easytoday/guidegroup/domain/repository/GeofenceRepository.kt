@@ -1,7 +1,7 @@
-// app/src/main/java/com/easytoday/guidegroup/domain/repository/GeofenceRepository.kt
 package com.easytoday.guidegroup.domain.repository
 
 import com.easytoday.guidegroup.domain.model.GeofenceArea
+import com.easytoday.guidegroup.domain.model.Result
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -49,5 +49,3 @@ interface GeofenceRepository {
      */
     suspend fun stopMonitoringGeofence(geofenceIds: List<String>): Result<Unit>
 }
-
-

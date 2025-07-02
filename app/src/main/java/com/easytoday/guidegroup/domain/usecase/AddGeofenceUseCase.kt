@@ -2,6 +2,7 @@
 package com.easytoday.guidegroup.domain.usecase
 
 import com.easytoday.guidegroup.domain.model.GeofenceArea
+import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.repository.GeofenceRepository
 import javax.inject.Inject
 
