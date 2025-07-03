@@ -246,15 +246,6 @@ afterEvaluate {
 }
 ///////////////// on filttre sur toutes les tâches des tests unitaires //////////////////////////
 
-
-
-
-
-
-
-
-
-
 //afterEvaluate {
 //    tasks.named<Test>("testMockDebugUnitTest") {
 //        //useJUnitPlatform() // Retire cette ligne si tu utilises JUnit 4
@@ -406,6 +397,14 @@ afterEvaluate {
 
         // pour la classe SeeddatabaseUseCase
         implementation("com.google.code.gson:gson:2.10.1")
+
+        // --- AJOUTEZ CES 3 LIGNES CI-DESSOUS ---
+        // WorkManager pour les tâches en arrière-plan
+        implementation("androidx.work:work-runtime-ktx:2.9.0")
+        // Intégration de Hilt avec WorkManager
+        implementation("androidx.hilt:hilt-work:1.2.0")
+        ksp("androidx.hilt:hilt-compiler:1.2.0")
+        // --- FIN DES AJOUTS ---
 
     }
 

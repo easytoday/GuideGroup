@@ -62,10 +62,16 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
 
-        <service
+        <!-- L'ancien service est supprimé, remplacé par le receiver -->
+        <!-- <service
             android:name=".geofencing.GeofenceTransitionsService"
             android:exported="false">
-        </service>
+        </service> -->
+
+        <!-- L'ancien service est supprimé, remplacé par le receiver -->
+        <receiver android:name=".geofencing.GeofenceBroadcastReceiver"
+            android:exported="true" />
+
 
         <service android:name=".service.LocationTrackingService"
             android:foregroundServiceType="location">
