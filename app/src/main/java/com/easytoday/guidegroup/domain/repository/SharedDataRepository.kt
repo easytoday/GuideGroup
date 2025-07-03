@@ -1,18 +1,14 @@
 package com.easytoday.guidegroup.domain.repository
 
+// CORRECTION : On importe la classe qui sera déplacée
+import com.easytoday.guidegroup.domain.model.PoiToShare
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// Données à partager
-data class PoiToShare(
-    val poiId: String,
-    val poiName: String,
-    val groupId: String
-)
+// La data class a été déplacée dans son propre fichier.
 
-// Le Repository lui-même sert à partager des données entre les écrans ex: MapScreen et chatScreen
 @Singleton
 class SharedDataRepository @Inject constructor() {
     private val _poiToShare = MutableStateFlow<PoiToShare?>(null)
@@ -22,10 +18,9 @@ class SharedDataRepository @Inject constructor() {
         _poiToShare.value = poi
     }
 
-    // Fonction pour consommer le POI et le supprimer
     fun consumePoiToShare(): PoiToShare? {
         val poi = _poiToShare.value
-        _poiToShare.value = null // Remet à zéro après consommation
+        _poiToShare.value = null
         return poi
     }
 }

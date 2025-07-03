@@ -49,7 +49,9 @@ fun GroupDetailScreen(
             // Pour l'instant, je vais supposer qu'elle le peut.
             // navController.navigate(Screen.MapScreen.createRoute(groupId))
             // Si la route est simple :
-            navController.navigate(Screen.MapScreen.route)
+            // On utilise la fonction createRoute pour insérer le VRAI groupId
+            navController.navigate(Screen.MapScreen.createRoute(groupId))
+            //navController.navigate(Screen.MapScreen.route)
         },
         onNavigateBack = {
             navController.popBackStack()

@@ -46,7 +46,6 @@ class MapViewModel @Inject constructor(
     private val _addPoiState = MutableStateFlow<Result<String>>(Result.Initial)
     val addPoiState: StateFlow<Result<String>> = _addPoiState.asStateFlow()
 
-    // CORRECTION : La propriété pour gérer le focus sur le POI
     val focusOnPoi: StateFlow<String?> = savedStateHandle.getStateFlow("focusOnPoi", null)
 
     init {
@@ -134,7 +133,6 @@ class MapViewModel @Inject constructor(
         _addPoiState.value = Result.Initial
     }
 
-    // CORRECTION : La fonction pour réinitialiser l'état de focus
     fun poiFocused() {
         savedStateHandle["focusOnPoi"] = null
     }

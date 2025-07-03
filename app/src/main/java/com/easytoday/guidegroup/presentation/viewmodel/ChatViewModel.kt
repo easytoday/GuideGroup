@@ -13,6 +13,9 @@ import com.easytoday.guidegroup.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,7 +23,7 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val authRepository: AuthRepository,
-    savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _groupId = MutableStateFlow(savedStateHandle.get<String>("groupId"))
@@ -41,6 +44,24 @@ class ChatViewModel @Inject constructor(
     init {
         observeCurrentUser()
         observeMessages()
+        handleSharedPoi()
+    }
+
+    private fun handleSharedPoi() {
+        val poiId: String? = savedStateHandle.get<String>("poiId")
+        val poiNameEncoded: String? = savedStateHandle.get<String>("poiName")
+
+        if (poiId != null && poiNameEncoded != null) {
+            val poiName = URLDecoder.decode(poiNameEncoded, StandardCharsets.UTF_8.toString())
+
+            viewModelScope.launch {
+                val user = _currentUser.first { it != null }
+                sharePoiInChat(poiId, poiName, user!!)
+
+                savedStateHandle.remove<String>("poiId")
+                savedStateHandle.remove<String>("poiName")
+            }
+        }
     }
 
     fun setGroupId(id: String?) {
@@ -70,6 +91,7 @@ class ChatViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
+    // CORRECTION : Simplification des fonctions d'envoi
     fun sendMessage(text: String) {
         val currentGroupId = _groupId.value ?: return
         val sender = _currentUser.value ?: return
@@ -82,13 +104,9 @@ class ChatViewModel @Inject constructor(
                 mediaType = Message.MediaType.TEXT,
                 groupId = currentGroupId
             )
-            _sendMessageState.value = Result.Loading
-            sendMessageUseCase(currentGroupId, message).collect { result ->
-                _sendMessageState.value = result
-                if (result !is Result.Loading) {
-                    resetSendMessageState()
-                }
-            }
+            // On lance l'envoi et on ne se soucie pas du résultat immédiat.
+            // Le listener `observeMessages` mettra à jour l'UI.
+            sendMessageUseCase(currentGroupId, message).collect()
         }
     }
 
@@ -96,9 +114,7 @@ class ChatViewModel @Inject constructor(
         val currentGroupId = _groupId.value ?: return
         val sender = _currentUser.value ?: return
         viewModelScope.launch {
-            _uploadMediaState.value = Result.Loading
             messageRepository.uploadMedia(uri, mediaType, currentGroupId).collect { uploadResult ->
-                _uploadMediaState.value = uploadResult
                 if (uploadResult is Result.Success) {
                     val message = Message(
                         senderId = sender.id,
@@ -107,20 +123,13 @@ class ChatViewModel @Inject constructor(
                         mediaType = mediaType,
                         groupId = currentGroupId
                     )
-                    sendMessageUseCase(currentGroupId, message).collect { sendResult ->
-                        _sendMessageState.value = sendResult
-                        if (sendResult !is Result.Loading) {
-                            resetSendMessageState()
-                            resetUploadMediaState()
-                        }
-                    }
+                    sendMessageUseCase(currentGroupId, message).collect()
                 }
             }
         }
     }
 
-    // CORRECTION : La signature de la fonction est mise à jour pour accepter l'utilisateur.
-    fun sharePoiInChat(poiId: String, poiName: String, sender: User) {
+    private fun sharePoiInChat(poiId: String, poiName: String, sender: User) {
         val currentGroupId = _groupId.value ?: return
         viewModelScope.launch {
             val message = Message(

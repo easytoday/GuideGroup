@@ -10,12 +10,17 @@ sealed class Screen(val route: String) {
     object SignUpScreen : Screen("signup_screen")
     object HomeScreen : Screen("home_screen")
 
+    // On réintroduit les arguments optionnels pour le partage de POI
     object ChatScreen : Screen("chat_screen/{groupId}?poiId={poiId}&poiName={poiName}") {
+        // Route de base pour accéder au chat
         fun createRoute(groupId: String) = "chat_screen/$groupId"
+
+        // Route spécifique pour partager un POI
         fun createSharePoiRoute(groupId: String, poiId: String, poiName: String): String {
             val encodedPoiName = URLEncoder.encode(poiName, StandardCharsets.UTF_8.toString())
             return "chat_screen/$groupId?poiId=$poiId&poiName=$encodedPoiName"
         }
+
         val arguments = listOf(
             navArgument("groupId") { type = NavType.StringType },
             navArgument("poiId") { type = NavType.StringType; nullable = true },
