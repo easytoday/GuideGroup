@@ -2,6 +2,7 @@ package com.easytoday.guidegroup.presentation.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import app.cash.turbine.test
 import com.easytoday.guidegroup.domain.model.Message
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
@@ -14,17 +15,28 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.*
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest : BehaviorSpec({
 
     val testDispatcher = StandardTestDispatcher()
+
+    // Mocks
+    val mockSendMessageUseCase: SendMessageUseCase = mockk(relaxed = true)
+    val mockMessageRepository: MessageRepository = mockk(relaxed = true)
+    val mockAuthRepository: AuthRepository = mockk(relaxed = true)
+    lateinit var savedStateHandle: SavedStateHandle
+    lateinit var viewModel: ChatViewModel
+
+    // Données de test
+    val testUser = User(id = "user1", email = "test@example.com", username = "TestUser")
+    val testGroupId = "group123"
 
     beforeSpec {
         Dispatchers.setMain(testDispatcher)
@@ -39,36 +51,73 @@ class ChatViewModelTest : BehaviorSpec({
         Dispatchers.resetMain()
     }
 
-    val mockSendMessageUseCase = mockk<SendMessageUseCase>()
-    val mockMessageRepository = mockk<MessageRepository>()
-    val mockAuthRepository = mockk<AuthRepository>()
-    val mockSavedStateHandle = mockk<SavedStateHandle>()
-
-    val testUser = User(id = "user1", email = "test@example.com", username = "TestUser")
-    val testGroupId = "group123"
-
-    val currentUserFlow = MutableStateFlow<Result<User?>>(Result.Success(testUser))
-    val messagesForGroupFlow = MutableStateFlow<List<Message>>(emptyList())
-
     beforeEach {
         clearAllMocks()
-        every { mockSavedStateHandle.get<String>("groupId") } returns testGroupId
-        every { mockAuthRepository.getCurrentUser() } returns currentUserFlow
-        every { mockMessageRepository.getMessagesForGroup(testGroupId) } returns messagesForGroupFlow
+        savedStateHandle = SavedStateHandle(mapOf("groupId" to testGroupId))
+        every { mockAuthRepository.getCurrentUser() } returns flowOf(Result.Success(testUser))
+        every { mockMessageRepository.getMessagesForGroup(testGroupId) } returns flowOf(emptyList())
     }
 
-    Given("ChatViewModel") {
+    Given("un ChatViewModel") {
 
         When("le ViewModel est initialisé") {
-            // CORRECTION : L'initialisation du ViewModel est maintenant dans le bloc de test
-            // pour s'assurer que les mocks sont prêts.
-            Then("il devrait récupérer le groupId et observer l'utilisateur et les messages") {
+            viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, savedStateHandle)
+
+            Then("il devrait charger le groupId, l'utilisateur et les messages") {
                 runTest(testDispatcher) {
-                    val viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, mockSavedStateHandle)
+                    testDispatcher.scheduler.advanceUntilIdle()
 
                     viewModel.groupId.value shouldBe testGroupId
+                    viewModel.currentUser.value shouldBe testUser
+                    viewModel.messages.value shouldBe emptyList()
+
                     coVerify(timeout = 100) { mockAuthRepository.getCurrentUser() }
                     coVerify(timeout = 100) { mockMessageRepository.getMessagesForGroup(testGroupId) }
+                }
+            }
+        }
+
+        When("sendMessage est appelé avec un texte valide") {
+            val textMessage = "Hello World"
+            coEvery { mockSendMessageUseCase(any(), any()) } returns flowOf(Result.Success(Unit))
+
+            viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, savedStateHandle)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            Then("il devrait appeler le use case et réinitialiser l'état") {
+                runTest(testDispatcher) {
+                    viewModel.sendMessageState.test {
+                        // CORRECTION de la syntaxe pour shouldBeInstanceOf
+                        awaitItem().shouldBeInstanceOf<Result.Initial>()
+
+                        viewModel.sendMessage(textMessage)
+
+                        awaitItem().shouldBeInstanceOf<Result.Loading>()
+                        awaitItem().shouldBeInstanceOf<Result.Success<*>>() // Le type générique n'importe pas ici
+                        awaitItem().shouldBeInstanceOf<Result.Initial>()
+                    }
+
+                    coVerify(exactly = 1) { mockSendMessageUseCase(testGroupId, any()) }
+                }
+            }
+        }
+
+        When("sendMediaMessage est appelé avec une image") {
+            val imageUri: Uri = mockk()
+            val fakeDownloadUrl = "http://fake.url/image.jpg"
+
+            coEvery { mockMessageRepository.uploadMedia(imageUri, Message.MediaType.IMAGE, testGroupId) } returns flowOf(Result.Loading, Result.Success(fakeDownloadUrl))
+            coEvery { mockSendMessageUseCase(any(), any()) } returns flowOf(Result.Loading, Result.Success(Unit))
+
+            viewModel = ChatViewModel(mockSendMessageUseCase, mockMessageRepository, mockAuthRepository, savedStateHandle)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            Then("il devrait uploader le média puis envoyer le message") {
+                runTest(testDispatcher) {
+                    viewModel.sendMediaMessage(imageUri, Message.MediaType.IMAGE)
+
+                    coVerify(exactly = 1) { mockMessageRepository.uploadMedia(imageUri, Message.MediaType.IMAGE, testGroupId) }
+                    coVerify(exactly = 1) { mockSendMessageUseCase(testGroupId, match { it.mediaUrl == fakeDownloadUrl }) }
                 }
             }
         }
