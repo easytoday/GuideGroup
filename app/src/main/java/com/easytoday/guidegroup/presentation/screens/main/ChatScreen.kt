@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.easytoday.guidegroup.domain.model.Message
+import com.easytoday.guidegroup.domain.model.PointOfInterest
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.presentation.navigation.Screen
@@ -41,25 +42,21 @@ fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val messages by viewModel.messages.collectAsState()
-    val sendMessageState by viewModel.sendMessageState.collectAsState()
-    val uploadMediaState by viewModel.uploadMediaState.collectAsState()
+    val poiDetails by viewModel.pointOfInterestDetails.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     val groupId by viewModel.groupId.collectAsState()
 
     ChatScreenContent(
         groupId = groupId,
         messages = messages,
+        poiDetails = poiDetails,
         currentUser = currentUser,
-        sendMessageState = sendMessageState,
-        uploadMediaState = uploadMediaState,
         onSendMessage = { text -> viewModel.sendMessage(text) },
         onPickImage = { uri -> viewModel.sendMediaMessage(uri, Message.MediaType.IMAGE) },
         onPickVideo = { uri -> viewModel.sendMediaMessage(uri, Message.MediaType.VIDEO) },
         onNavigateBack = { navController.popBackStack() },
-        onResetSendState = { viewModel.resetSendMessageState() },
-        onResetUploadState = { viewModel.resetUploadMediaState() },
-        onPoiClick = { gid, poiId ->
-            navController.navigate(Screen.MapScreen.createFocusPoiRoute(gid, poiId))
+        onPoiClick = { gid, poi ->
+            navController.navigate(Screen.MapScreen.createFocusPoiRoute(gid, poi.id, poi.latitude, poi.longitude))
         }
     )
 }
@@ -69,21 +66,17 @@ fun ChatScreen(
 fun ChatScreenContent(
     groupId: String?,
     messages: List<Message>,
+    poiDetails: Map<String, PointOfInterest>,
     currentUser: User?,
-    sendMessageState: Result<Unit>,
-    uploadMediaState: Result<String>,
     onSendMessage: (String) -> Unit,
     onPickImage: (Uri) -> Unit,
     onPickVideo: (Uri) -> Unit,
     onNavigateBack: () -> Unit,
-    onResetSendState: () -> Unit,
-    onResetUploadState: () -> Unit,
-    onPoiClick: (groupId: String, poiId: String) -> Unit
+    onPoiClick: (groupId: String, poi: PointOfInterest) -> Unit
 ) {
     var messageInput by remember { mutableStateOf("") }
     var showMediaOptions by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
@@ -97,19 +90,6 @@ fun ChatScreenContent(
         uri?.let {
             showMediaOptions = false
             onPickVideo(it)
-        }
-    }
-
-    LaunchedEffect(sendMessageState) {
-        if (sendMessageState is Result.Error) {
-            Toast.makeText(context, "Erreur: ${sendMessageState.message}", Toast.LENGTH_LONG).show()
-            onResetSendState()
-        }
-    }
-    LaunchedEffect(uploadMediaState) {
-        if (uploadMediaState is Result.Error) {
-            Toast.makeText(context, "Erreur upload: ${uploadMediaState.message}", Toast.LENGTH_LONG).show()
-            onResetUploadState()
         }
     }
 
@@ -132,9 +112,6 @@ fun ChatScreenContent(
         },
         bottomBar = {
             Column {
-                if (uploadMediaState is Result.Loading) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
                 MessageInput(
                     messageInput = messageInput,
                     onMessageInputChange = { messageInput = it },
@@ -147,7 +124,7 @@ fun ChatScreenContent(
                         }
                     },
                     onAttachMedia = { showMediaOptions = !showMediaOptions },
-                    isSending = sendMessageState is Result.Loading || uploadMediaState is Result.Loading
+                    isSending = false // Simplifié pour le moment
                 )
                 if (showMediaOptions) {
                     MediaOptionsPanel(
@@ -158,8 +135,6 @@ fun ChatScreenContent(
             }
         }
     ) { paddingValues ->
-        // CORRECTION : Le LazyColumn est maintenant le seul enfant de la Column
-        // et a un weight(1f) pour prendre tout l'espace disponible, ce qui active le scroll.
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             LazyColumn(
                 modifier = Modifier
@@ -176,12 +151,13 @@ fun ChatScreenContent(
                     }
                 } else {
                     items(messages) { message ->
+                        val poi = message.poiId?.let { poiDetails[it] }
                         MessageBubble(
                             message = message,
                             isCurrentUser = message.senderId == currentUser?.id,
                             onPoiClick = {
-                                if (message.poiId != null && groupId != null) {
-                                    onPoiClick(groupId, message.poiId)
+                                if (poi != null && groupId != null) {
+                                    onPoiClick(groupId, poi)
                                 }
                             }
                         )
@@ -297,29 +273,4 @@ fun MediaOptionsPanel(onPickImage: () -> Unit, onPickVideo: () -> Unit) {
         IconButton(onClick = onPickVideo) { Icon(Icons.Default.Videocam, contentDescription = "Vidéo") }
         IconButton(onClick = { /* TODO */ }, enabled = false) { Icon(Icons.Default.Mic, contentDescription = "Audio") }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewChatScreen() {
-    val fakeMessages = listOf(
-        Message(id="1", senderId="user2", senderName="Bob", text="Salut tout le monde!", timestamp= Date()),
-        Message(id="2", senderId="user1", senderName="Alice (Moi)", text="Hey! Bien arrivé?", timestamp= Date()),
-    )
-    val fakeUser = User(id="user1", username="Alice (Moi)")
-
-    ChatScreenContent(
-        groupId = "preview_group",
-        messages = fakeMessages,
-        currentUser = fakeUser,
-        sendMessageState = Result.Initial,
-        uploadMediaState = Result.Initial,
-        onSendMessage = {},
-        onPickImage = {},
-        onPickVideo = {},
-        onNavigateBack = {},
-        onResetSendState = {},
-        onResetUploadState = {},
-        onPoiClick = { _, _ -> }
-    )
 }

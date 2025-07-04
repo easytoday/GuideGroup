@@ -45,6 +45,7 @@ fun MapScreen(
     }
 
     val addPoiState by viewModel.addPoiState.collectAsState()
+    val focusEvent by viewModel.focusEvent.collectAsState()
 
     LaunchedEffect(addPoiState) {
         if (addPoiState is Result.Success) {
@@ -72,8 +73,8 @@ fun MapScreen(
         memberLocations = viewModel.memberLocations.collectAsState().value,
         pointsOfInterest = viewModel.pointsOfInterest.collectAsState().value,
         isTracking = false,
-        focusOnPoiId = viewModel.focusOnPoi.collectAsState().value,
-        onPoiFocused = { viewModel.poiFocused() },
+        focusEvent = focusEvent, // On passe l'événement de focus
+        onFocusEventConsumed = { viewModel.onFocusEventConsumed() }, // On passe la fonction de consommation
         onNavigateBack = { navController.popBackStack() },
         onAddPoi = { name, desc, lat, lon ->
             viewModel.addPointOfInterest(name, desc, lat, lon)
@@ -103,8 +104,8 @@ fun MapScreenContent(
     memberLocations: List<DomainLocation>,
     pointsOfInterest: List<PointOfInterest>,
     isTracking: Boolean,
-    focusOnPoiId: String?,
-    onPoiFocused: () -> Unit,
+    focusEvent: LatLng?,
+    onFocusEventConsumed: () -> Unit,
     onNavigateBack: () -> Unit,
     onAddPoi: (name: String, description: String, latitude: Double, longitude: Double) -> Unit,
     onToggleTracking: (Boolean) -> Unit,
@@ -119,25 +120,26 @@ fun MapScreenContent(
     var isInAddPoiMode by remember { mutableStateOf(false) }
     var hasUserInteractedWithMap by remember { mutableStateOf(false) }
 
+    // Effet pour centrer la carte sur la position de l'utilisateur au démarrage
     LaunchedEffect(userRealtimeLocation) {
         if (!hasUserInteractedWithMap && userRealtimeLocation != null) {
             cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(LatLng(userRealtimeLocation.latitude, userRealtimeLocation.longitude), 15f))
         }
     }
 
-    LaunchedEffect(focusOnPoiId) {
-        if (focusOnPoiId != null) {
-            val poiToFocus = pointsOfInterest.find { it.id == focusOnPoiId }
-            poiToFocus?.let {
-                hasUserInteractedWithMap = true
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 17f)
-                )
-            }
-            onPoiFocused()
+    // Effet pour gérer l'événement de focus sur un POI
+    LaunchedEffect(focusEvent) {
+        if (focusEvent != null) {
+            hasUserInteractedWithMap = true
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngZoom(focusEvent, 17f),
+                durationMs = 1500
+            )
+            onFocusEventConsumed()
         }
     }
 
+    // Gérer l'interaction manuelle de l'utilisateur avec la carte
     if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
         hasUserInteractedWithMap = true
     }
@@ -203,7 +205,6 @@ fun MapScreenContent(
                     Marker(state = MarkerState(position = LatLng(memberLoc.latitude, memberLoc.longitude)), title = "Membre ${memberLoc.userId}")
                 }
                 pointsOfInterest.forEach { poi ->
-                    // CORRECTION : Remplacement par un Marker simple qui réagit au clic
                     Marker(
                         state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),
                         title = poi.name,
@@ -339,8 +340,8 @@ fun PreviewMapScreenContent() {
         memberLocations = fakeMembers,
         pointsOfInterest = fakePois,
         isTracking = true,
-        focusOnPoiId = null,
-        onPoiFocused = {},
+        focusEvent = null,
+        onFocusEventConsumed = {},
         onNavigateBack = {},
         onAddPoi = { _, _, _, _ -> },
         onToggleTracking = {},

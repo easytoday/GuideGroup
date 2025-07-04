@@ -9,6 +9,7 @@ import com.easytoday.guidegroup.domain.model.PointOfInterest
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.domain.repository.*
+import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -25,7 +26,10 @@ class MapViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _currentGroupId = MutableStateFlow<String?>(savedStateHandle.get<String>("groupId"))
+    private val _focusEvent = MutableStateFlow<LatLng?>(null)
+    val focusEvent: StateFlow<LatLng?> = _focusEvent.asStateFlow()
+
+    private val _currentGroupId = MutableStateFlow(savedStateHandle.get<String>("groupId"))
     val currentGroupId: StateFlow<String?> = _currentGroupId.asStateFlow()
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -46,8 +50,6 @@ class MapViewModel @Inject constructor(
     private val _addPoiState = MutableStateFlow<Result<String>>(Result.Initial)
     val addPoiState: StateFlow<Result<String>> = _addPoiState.asStateFlow()
 
-    val focusOnPoi: StateFlow<String?> = savedStateHandle.getStateFlow("focusOnPoi", null)
-
     init {
         observeCurrentUser()
         observeUserRealtimeLocation()
@@ -55,6 +57,16 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             _currentGroupId.filterNotNull().collect { groupId ->
                 observeGroupData(groupId)
+            }
+        }
+
+        val latString = savedStateHandle.get<String>("lat")
+        val lonString = savedStateHandle.get<String>("lon")
+        if (latString != null && lonString != null) {
+            val lat = latString.toDoubleOrNull()
+            val lon = lonString.toDoubleOrNull()
+            if (lat != null && lon != null) {
+                _focusEvent.value = LatLng(lat, lon)
             }
         }
     }
@@ -129,11 +141,14 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    fun resetAddPoiState() {
-        _addPoiState.value = Result.Initial
+    fun onFocusEventConsumed() {
+        _focusEvent.value = null
+        savedStateHandle.remove<String>("lat")
+        savedStateHandle.remove<String>("lon")
+        savedStateHandle.remove<String>("focusOnPoi")
     }
 
-    fun poiFocused() {
-        savedStateHandle["focusOnPoi"] = null
+    fun resetAddPoiState() {
+        _addPoiState.value = Result.Initial
     }
 }

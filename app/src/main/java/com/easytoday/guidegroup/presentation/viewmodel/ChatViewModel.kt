@@ -9,11 +9,11 @@ import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.domain.repository.AuthRepository
 import com.easytoday.guidegroup.domain.repository.MessageRepository
+import com.easytoday.guidegroup.domain.repository.PointOfInterestRepository
 import com.easytoday.guidegroup.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import javax.inject.Inject
@@ -23,6 +23,8 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUseCase: SendMessageUseCase,
     private val messageRepository: MessageRepository,
     private val authRepository: AuthRepository,
+    // CORRECTION : On a besoin du POI repository pour récupérer les infos du POI
+    private val pointOfInterestRepository: PointOfInterestRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -31,6 +33,10 @@ class ChatViewModel @Inject constructor(
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val messages: StateFlow<List<Message>> = _messages.asStateFlow()
+
+    // CORRECTION : Nouveau StateFlow pour exposer les POI récupérés aux messages
+    private val _pointOfInterestDetails = MutableStateFlow<Map<String, com.easytoday.guidegroup.domain.model.PointOfInterest>>(emptyMap())
+    val pointOfInterestDetails: StateFlow<Map<String, com.easytoday.guidegroup.domain.model.PointOfInterest>> = _pointOfInterestDetails.asStateFlow()
 
     private val _sendMessageState = MutableStateFlow<Result<Unit>>(Result.Initial)
     val sendMessageState: StateFlow<Result<Unit>> = _sendMessageState.asStateFlow()
@@ -43,13 +49,13 @@ class ChatViewModel @Inject constructor(
 
     init {
         observeCurrentUser()
-        observeMessages()
+        observeMessagesAndPois()
         handleSharedPoi()
     }
 
     private fun handleSharedPoi() {
-        val poiId: String? = savedStateHandle.get<String>("poiId")
-        val poiNameEncoded: String? = savedStateHandle.get<String>("poiName")
+        val poiId = savedStateHandle.get<String>("poiId")
+        val poiNameEncoded = savedStateHandle.get<String>("poiName")
 
         if (poiId != null && poiNameEncoded != null) {
             val poiName = URLDecoder.decode(poiNameEncoded, StandardCharsets.UTF_8.toString())
@@ -79,19 +85,24 @@ class ChatViewModel @Inject constructor(
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private fun observeMessages() {
+    private fun observeMessagesAndPois() {
         _groupId.flatMapLatest { id ->
             if (id != null) {
-                messageRepository.getMessagesForGroup(id)
+                // On observe les messages et les POI en parallèle
+                combine(
+                    messageRepository.getMessagesForGroup(id),
+                    pointOfInterestRepository.getGroupPointsOfInterest(id)
+                ) { messages, pois ->
+                    // On met à jour les deux états
+                    _messages.value = messages
+                    _pointOfInterestDetails.value = pois.associateBy { it.id }
+                }
             } else {
                 emptyFlow()
             }
-        }.onEach { messagesList ->
-            _messages.value = messagesList
         }.launchIn(viewModelScope)
     }
 
-    // CORRECTION : Simplification des fonctions d'envoi
     fun sendMessage(text: String) {
         val currentGroupId = _groupId.value ?: return
         val sender = _currentUser.value ?: return
@@ -104,8 +115,6 @@ class ChatViewModel @Inject constructor(
                 mediaType = Message.MediaType.TEXT,
                 groupId = currentGroupId
             )
-            // On lance l'envoi et on ne se soucie pas du résultat immédiat.
-            // Le listener `observeMessages` mettra à jour l'UI.
             sendMessageUseCase(currentGroupId, message).collect()
         }
     }

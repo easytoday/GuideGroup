@@ -10,17 +10,12 @@ sealed class Screen(val route: String) {
     object SignUpScreen : Screen("signup_screen")
     object HomeScreen : Screen("home_screen")
 
-    // On réintroduit les arguments optionnels pour le partage de POI
     object ChatScreen : Screen("chat_screen/{groupId}?poiId={poiId}&poiName={poiName}") {
-        // Route de base pour accéder au chat
         fun createRoute(groupId: String) = "chat_screen/$groupId"
-
-        // Route spécifique pour partager un POI
         fun createSharePoiRoute(groupId: String, poiId: String, poiName: String): String {
             val encodedPoiName = URLEncoder.encode(poiName, StandardCharsets.UTF_8.toString())
             return "chat_screen/$groupId?poiId=$poiId&poiName=$encodedPoiName"
         }
-
         val arguments = listOf(
             navArgument("groupId") { type = NavType.StringType },
             navArgument("poiId") { type = NavType.StringType; nullable = true },
@@ -32,12 +27,20 @@ sealed class Screen(val route: String) {
         fun createRoute(groupId: String) = "group_detail_screen/$groupId"
     }
 
-    object MapScreen : Screen("map_screen/{groupId}?focusOnPoi={focusOnPoi}") {
+    // CORRECTION : Ajout de lat et lon comme arguments optionnels pour le focus
+    object MapScreen : Screen("map_screen/{groupId}?focusOnPoi={focusOnPoi}&lat={lat}&lon={lon}") {
         fun createRoute(groupId: String?) = "map_screen/${groupId ?: "no_group"}"
-        fun createFocusPoiRoute(groupId: String, poiId: String) = "map_screen/$groupId?focusOnPoi=$poiId"
+
+        // Route pour le focus qui passe maintenant toutes les infos
+        fun createFocusPoiRoute(groupId: String, poiId: String, lat: Double, lon: Double) =
+            "map_screen/$groupId?focusOnPoi=$poiId&lat=$lat&lon=$lon"
+
         val arguments = listOf(
             navArgument("groupId") { type = NavType.StringType; nullable = true },
-            navArgument("focusOnPoi") { type = NavType.StringType; nullable = true }
+            navArgument("focusOnPoi") { type = NavType.StringType; nullable = true },
+            // On définit les nouveaux arguments ici
+            navArgument("lat") { type = NavType.StringType; nullable = true },
+            navArgument("lon") { type = NavType.StringType; nullable = true }
         )
     }
 }

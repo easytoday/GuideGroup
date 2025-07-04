@@ -32,8 +32,6 @@ fun AppNavigation(navController: NavHostController) {
 
         composable(
             route = Screen.GroupDetailScreen.route,
-            // CORRECTION : On définit l'argument ici directement comme pour les autres,
-            // car il n'est pas défini dans l'objet Screen.
             arguments = listOf(navArgument("groupId") { type = NavType.StringType })
         ) { backStackEntry ->
             val groupId = backStackEntry.arguments?.getString("groupId")
@@ -57,6 +55,7 @@ fun AppNavigation(navController: NavHostController) {
             arguments = Screen.MapScreen.arguments
         ) { backStackEntry ->
             val groupId = backStackEntry.arguments?.getString("groupId")
+            // Le MapScreen lira les autres arguments directement depuis le SavedStateHandle
             MapScreen(navController = navController, groupId = groupId)
         }
     }
