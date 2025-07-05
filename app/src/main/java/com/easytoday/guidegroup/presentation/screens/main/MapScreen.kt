@@ -35,8 +35,6 @@ import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
 import java.util.Date
 
-// CORRECTION : Ajout de l'annotation pour accepter l'API expérimentale
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     navController: NavController,
@@ -55,6 +53,7 @@ fun MapScreen(
     val addPoiState by viewModel.addPoiState.collectAsState()
     val addGeofenceState by viewModel.addGeofenceState.collectAsState()
     val focusEvent by viewModel.focusEvent.collectAsState()
+    val isTracking by viewModel.isTracking.collectAsState()
 
     LaunchedEffect(addPoiState) {
         if (addPoiState is Result.Success) {
@@ -94,7 +93,7 @@ fun MapScreen(
         memberLocations = viewModel.memberLocations.collectAsState().value,
         pointsOfInterest = viewModel.pointsOfInterest.collectAsState().value,
         geofenceAreas = viewModel.geofenceAreas.collectAsState().value,
-        isTracking = false,
+        isTracking = isTracking,
         focusEvent = focusEvent,
         onFocusEventConsumed = { viewModel.onFocusEventConsumed() },
         onNavigateBack = { navController.popBackStack() },
@@ -107,8 +106,8 @@ fun MapScreen(
         onRemoveGeofence = { geofenceId ->
             viewModel.removeGeofence(geofenceId)
         },
-        onToggleTracking = { isTracking ->
-            if (isTracking) {
+        onToggleTracking = { trackingStatus ->
+            if (trackingStatus) {
                 startLocationTrackingService(context, groupId)
             } else {
                 stopLocationTrackingService(context)
@@ -143,7 +142,6 @@ fun MapScreenContent(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(48.8566, 2.3522), 10f)
     }
-    var isTrackingState by remember { mutableStateOf(isTracking) }
     var showAddPoiDialog by remember { mutableStateOf(false) }
     var showAddGeofenceDialog by remember { mutableStateOf(false) }
     var showRemoveGeofenceDialog by remember { mutableStateOf<GeofenceArea?>(null) }
@@ -185,10 +183,11 @@ fun MapScreenContent(
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FloatingActionButton(onClick = { hasUserInteractedWithMap = false }) { Icon(Icons.Default.MyLocation, "Recentrer") }
+
                 FloatingActionButton(
-                    onClick = { isTrackingState = !isTrackingState; onToggleTracking(isTrackingState) },
-                    containerColor = if (isTrackingState) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
-                ) { Icon(if (isTrackingState) Icons.Default.Stop else Icons.Default.PlayArrow, "Suivi") }
+                    onClick = { onToggleTracking(!isTracking) },
+                    containerColor = if (isTracking) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+                ) { Icon(if (isTracking) Icons.Default.Stop else Icons.Default.PlayArrow, "Suivi") }
 
                 if (currentUser?.isGuide == true) {
                     FloatingActionButton(onClick = { showAddGeofenceDialog = true }) {

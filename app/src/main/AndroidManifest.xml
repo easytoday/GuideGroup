@@ -72,6 +72,12 @@
         <receiver android:name=".geofencing.GeofenceBroadcastReceiver"
             android:exported="true" />
 
+        <!-- CORRECTION : Déclaration du nouveau JobIntentService -->
+        <service
+            android:name=".geofencing.GeofenceTransitionsJobIntentService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+
 
         <service android:name=".service.LocationTrackingService"
             android:foregroundServiceType="location">

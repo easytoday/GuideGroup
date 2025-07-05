@@ -27,6 +27,9 @@ class GeofenceRepositoryImpl @Inject constructor(
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(context, GeofenceBroadcastReceiver::class.java)
+        // CORRECTION : Ajout du flag FLAG_MUTABLE ou FLAG_IMMUTABLE.
+        // Pour un BroadcastReceiver qui reçoit des données, IMMUTABLE est le plus sûr
+        // et souvent requis par le système.
         PendingIntent.getBroadcast(
             context,
             0,

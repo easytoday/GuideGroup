@@ -11,7 +11,14 @@ import timber.log.Timber
 
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
+
     override fun onReceive(context: Context, intent: Intent) {
+        // CORRECTION : On ne traite plus l'événement ici.
+        // On le délègue à un Service pour plus de fiabilité.
+        GeofenceTransitionsJobIntentService.enqueueWork(context, intent)
+    }
+
+/*    override fun onReceive(context: Context, intent: Intent) {
         val geofencingEvent = GeofencingEvent.fromIntent(intent)
 
         if (geofencingEvent == null) {
@@ -39,5 +46,5 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
         WorkManager.getInstance(context).enqueue(workRequest)
         Timber.d("Broadcast reçu et Worker pour le géorepérage mis en file d'attente.")
-    }
+    }*/
 }

@@ -23,8 +23,11 @@ class MapViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
     private val geofenceRepository: GeofenceRepository,
+    private val trackingStateRepository: TrackingStateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    val isTracking = trackingStateRepository.isTracking
 
     private val _focusEvent = MutableStateFlow<LatLng?>(null)
     val focusEvent: StateFlow<LatLng?> = _focusEvent.asStateFlow()
