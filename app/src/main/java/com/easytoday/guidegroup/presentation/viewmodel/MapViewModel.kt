@@ -4,11 +4,10 @@ import android.location.Location
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.easytoday.guidegroup.domain.model.Group
-import com.easytoday.guidegroup.domain.model.PointOfInterest
+import com.easytoday.guidegroup.domain.model.*
 import com.easytoday.guidegroup.domain.model.Result
-import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.domain.repository.*
+import com.google.android.gms.location.Geofence
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -23,6 +22,7 @@ class MapViewModel @Inject constructor(
     private val pointOfInterestRepository: PointOfInterestRepository,
     private val authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
+    private val geofenceRepository: GeofenceRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -47,8 +47,15 @@ class MapViewModel @Inject constructor(
     private val _pointsOfInterest = MutableStateFlow<List<PointOfInterest>>(emptyList())
     val pointsOfInterest: StateFlow<List<PointOfInterest>> = _pointsOfInterest.asStateFlow()
 
+    private val _geofenceAreas = MutableStateFlow<List<GeofenceArea>>(emptyList())
+    val geofenceAreas: StateFlow<List<GeofenceArea>> = _geofenceAreas.asStateFlow()
+
     private val _addPoiState = MutableStateFlow<Result<String>>(Result.Initial)
     val addPoiState: StateFlow<Result<String>> = _addPoiState.asStateFlow()
+
+    private val _addGeofenceState = MutableStateFlow<Result<Unit>>(Result.Initial)
+    val addGeofenceState: StateFlow<Result<Unit>> = _addGeofenceState.asStateFlow()
+
 
     init {
         observeCurrentUser()
@@ -78,6 +85,10 @@ class MapViewModel @Inject constructor(
 
         pointOfInterestRepository.getGroupPointsOfInterest(groupId)
             .onEach { _pointsOfInterest.value = it }
+            .launchIn(viewModelScope)
+
+        geofenceRepository.getGeofenceAreasForGroup(groupId)
+            .onEach { _geofenceAreas.value = it }
             .launchIn(viewModelScope)
 
         combine(
@@ -139,6 +150,45 @@ class MapViewModel @Inject constructor(
                 _addPoiState.value = Result.Error("Échec de l'ajout du POI: ${e.message}", e)
             }
         }
+    }
+
+    fun addGeofence(id: String, name: String, latitude: Double, longitude: Double, radius: Float) {
+        val groupId = _currentGroupId.value ?: return
+        val userId = _currentUser.value?.id ?: return
+
+        val geofenceArea = GeofenceArea(
+            id = id,
+            groupId = groupId,
+            name = name,
+            latitude = latitude,
+            longitude = longitude,
+            radius = radius,
+            transitionTypes = Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT,
+            expirationDurationMillis = 12 * 60 * 60 * 1000,
+            setByUserId = userId
+        )
+
+        viewModelScope.launch {
+            _addGeofenceState.value = Result.Loading
+            val saveResult = geofenceRepository.addGeofenceArea(geofenceArea)
+            if (saveResult is Result.Success) {
+                val monitorResult = geofenceRepository.startMonitoringGeofence(geofenceArea)
+                _addGeofenceState.value = monitorResult
+            } else {
+                _addGeofenceState.value = saveResult
+            }
+        }
+    }
+
+    fun removeGeofence(geofenceId: String) {
+        viewModelScope.launch {
+            geofenceRepository.stopMonitoringGeofence(listOf(geofenceId))
+            geofenceRepository.removeGeofenceArea(geofenceId)
+        }
+    }
+
+    fun resetAddGeofenceState() {
+        _addGeofenceState.value = Result.Initial
     }
 
     fun onFocusEventConsumed() {

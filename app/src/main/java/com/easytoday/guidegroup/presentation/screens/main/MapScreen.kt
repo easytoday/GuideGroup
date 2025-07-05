@@ -2,6 +2,7 @@ package com.easytoday.guidegroup.presentation.screens.main
 
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,15 +12,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.easytoday.guidegroup.domain.model.GeofenceArea
 import com.easytoday.guidegroup.domain.model.Location as DomainLocation
 import com.easytoday.guidegroup.domain.model.PointOfInterest
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.model.User
 import com.easytoday.guidegroup.presentation.navigation.Screen
+import com.easytoday.guidegroup.presentation.screens.main.components.SetGeofenceDialog
 import com.easytoday.guidegroup.presentation.viewmodel.MapViewModel
 import com.easytoday.guidegroup.service.LocationTrackingService
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -30,12 +35,15 @@ import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
 import java.util.Date
 
+// CORRECTION : Ajout de l'annotation pour accepter l'API expérimentale
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     navController: NavController,
     groupId: String?,
     viewModel: MapViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(groupId) {
@@ -45,13 +53,13 @@ fun MapScreen(
     }
 
     val addPoiState by viewModel.addPoiState.collectAsState()
+    val addGeofenceState by viewModel.addGeofenceState.collectAsState()
     val focusEvent by viewModel.focusEvent.collectAsState()
 
     LaunchedEffect(addPoiState) {
         if (addPoiState is Result.Success) {
             val poiId = (addPoiState as Result.Success<String>).data
             val poi = viewModel.pointsOfInterest.value.find { it.id == poiId }
-
             if (poi != null && groupId != null) {
                 val result = snackbarHostState.showSnackbar(
                     message = "${poi.name} a été ajouté",
@@ -66,21 +74,40 @@ fun MapScreen(
         }
     }
 
+    LaunchedEffect(addGeofenceState) {
+        when (val result = addGeofenceState) {
+            is Result.Success -> {
+                Toast.makeText(context, "Zone de géorepérage ajoutée", Toast.LENGTH_SHORT).show()
+                viewModel.resetAddGeofenceState()
+            }
+            is Result.Error -> {
+                Toast.makeText(context, "Erreur: ${result.message}", Toast.LENGTH_LONG).show()
+                viewModel.resetAddGeofenceState()
+            }
+            else -> {}
+        }
+    }
+
     MapScreenContent(
         currentUser = viewModel.currentUser.collectAsState().value,
-        currentGroup = viewModel.currentGroup.collectAsState().value,
         userRealtimeLocation = viewModel.userRealtimeLocation.collectAsState().value,
         memberLocations = viewModel.memberLocations.collectAsState().value,
         pointsOfInterest = viewModel.pointsOfInterest.collectAsState().value,
+        geofenceAreas = viewModel.geofenceAreas.collectAsState().value,
         isTracking = false,
-        focusEvent = focusEvent, // On passe l'événement de focus
-        onFocusEventConsumed = { viewModel.onFocusEventConsumed() }, // On passe la fonction de consommation
+        focusEvent = focusEvent,
+        onFocusEventConsumed = { viewModel.onFocusEventConsumed() },
         onNavigateBack = { navController.popBackStack() },
         onAddPoi = { name, desc, lat, lon ->
             viewModel.addPointOfInterest(name, desc, lat, lon)
         },
+        onAddGeofence = { id, name, lat, lon, radius ->
+            viewModel.addGeofence(id, name, lat, lon, radius)
+        },
+        onRemoveGeofence = { geofenceId ->
+            viewModel.removeGeofence(geofenceId)
+        },
         onToggleTracking = { isTracking ->
-            val context = navController.context
             if (isTracking) {
                 startLocationTrackingService(context, groupId)
             } else {
@@ -99,35 +126,36 @@ fun MapScreen(
 @Composable
 fun MapScreenContent(
     currentUser: User?,
-    currentGroup: com.easytoday.guidegroup.domain.model.Group?,
     userRealtimeLocation: android.location.Location?,
     memberLocations: List<DomainLocation>,
     pointsOfInterest: List<PointOfInterest>,
+    geofenceAreas: List<GeofenceArea>,
     isTracking: Boolean,
     focusEvent: LatLng?,
     onFocusEventConsumed: () -> Unit,
     onNavigateBack: () -> Unit,
     onAddPoi: (name: String, description: String, latitude: Double, longitude: Double) -> Unit,
+    onAddGeofence: (id: String, name: String, lat: Double, lon: Double, radius: Float) -> Unit,
+    onRemoveGeofence: (geofenceId: String) -> Unit,
     onToggleTracking: (Boolean) -> Unit,
     onSharePoiClick: (PointOfInterest) -> Unit
 ) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(48.8566, 2.3522), 10f)
     }
-    val coroutineScope = rememberCoroutineScope()
     var isTrackingState by remember { mutableStateOf(isTracking) }
     var showAddPoiDialog by remember { mutableStateOf(false) }
-    var isInAddPoiMode by remember { mutableStateOf(false) }
+    var showAddGeofenceDialog by remember { mutableStateOf(false) }
+    var showRemoveGeofenceDialog by remember { mutableStateOf<GeofenceArea?>(null) }
+    var newPoiLocation by remember { mutableStateOf<LatLng?>(null) }
     var hasUserInteractedWithMap by remember { mutableStateOf(false) }
 
-    // Effet pour centrer la carte sur la position de l'utilisateur au démarrage
     LaunchedEffect(userRealtimeLocation) {
         if (!hasUserInteractedWithMap && userRealtimeLocation != null) {
             cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(LatLng(userRealtimeLocation.latitude, userRealtimeLocation.longitude), 15f))
         }
     }
 
-    // Effet pour gérer l'événement de focus sur un POI
     LaunchedEffect(focusEvent) {
         if (focusEvent != null) {
             hasUserInteractedWithMap = true
@@ -139,7 +167,6 @@ fun MapScreenContent(
         }
     }
 
-    // Gérer l'interaction manuelle de l'utilisateur avec la carte
     if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
         hasUserInteractedWithMap = true
     }
@@ -147,7 +174,7 @@ fun MapScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(currentGroup?.name ?: "Carte du groupe") },
+                title = { Text("Carte du groupe") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
@@ -156,27 +183,16 @@ fun MapScreenContent(
             )
         },
         floatingActionButton = {
-            AnimatedVisibility(visible = !isInAddPoiMode) {
-                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FloatingActionButton(onClick = {
-                        hasUserInteractedWithMap = false
-                        userRealtimeLocation?.let {
-                            coroutineScope.launch {
-                                cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(it.latitude, it.longitude)))
-                            }
-                        }
-                    }) { Icon(Icons.Default.MyLocation, contentDescription = "Recentrer") }
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FloatingActionButton(onClick = { hasUserInteractedWithMap = false }) { Icon(Icons.Default.MyLocation, "Recentrer") }
+                FloatingActionButton(
+                    onClick = { isTrackingState = !isTrackingState; onToggleTracking(isTrackingState) },
+                    containerColor = if (isTrackingState) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+                ) { Icon(if (isTrackingState) Icons.Default.Stop else Icons.Default.PlayArrow, "Suivi") }
 
-                    FloatingActionButton(
-                        onClick = {
-                            isTrackingState = !isTrackingState
-                            onToggleTracking(isTrackingState)
-                        },
-                        containerColor = if (isTrackingState) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
-                    ) { Icon(if (isTrackingState) Icons.Default.Stop else Icons.Default.PlayArrow, contentDescription = "Suivi") }
-
-                    FloatingActionButton(onClick = { isInAddPoiMode = true }) {
-                        Icon(Icons.Default.AddLocation, contentDescription = "Ajouter un point d'intérêt")
+                if (currentUser?.isGuide == true) {
+                    FloatingActionButton(onClick = { showAddGeofenceDialog = true }) {
+                        Icon(Icons.Default.Security, "Définir une zone")
                     }
                 }
             }
@@ -189,58 +205,69 @@ fun MapScreenContent(
                 uiSettings = MapUiSettings(zoomControlsEnabled = true),
                 contentPadding = PaddingValues(bottom = 80.dp, end = 80.dp),
                 onMapLongClick = { latLng ->
-                    if (!isInAddPoiMode) {
-                        hasUserInteractedWithMap = true
-                        coroutineScope.launch {
-                            cameraPositionState.animate(CameraUpdateFactory.newLatLng(latLng), 500)
-                        }
-                        isInAddPoiMode = true
-                    }
+                    newPoiLocation = latLng
+                    showAddPoiDialog = true
                 }
             ) {
-                userRealtimeLocation?.let {
-                    Marker(state = MarkerState(position = LatLng(it.latitude, it.longitude)), title = currentUser?.username ?: "Ma Position", icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-                }
-                memberLocations.forEach { memberLoc ->
-                    Marker(state = MarkerState(position = LatLng(memberLoc.latitude, memberLoc.longitude)), title = "Membre ${memberLoc.userId}")
-                }
-                pointsOfInterest.forEach { poi ->
-                    Marker(
-                        state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),
-                        title = poi.name,
-                        snippet = poi.description,
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE),
-                        onInfoWindowClick = {
-                            onSharePoiClick(poi)
+                userRealtimeLocation?.let { Marker(state = MarkerState(LatLng(it.latitude, it.longitude)), title = currentUser?.username ?: "Moi", icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)) }
+                memberLocations.forEach { Marker(state = MarkerState(LatLng(it.latitude, it.longitude)), title = "Membre ${it.userId}") }
+                pointsOfInterest.forEach { poi -> Marker(state = MarkerState(LatLng(poi.latitude, poi.longitude)), title = poi.name, snippet = poi.description, icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE), onInfoWindowClick = { onSharePoiClick(poi) }) }
+
+                geofenceAreas.forEach { area ->
+                    Circle(
+                        center = LatLng(area.latitude, area.longitude),
+                        radius = area.radius.toDouble(),
+                        strokeColor = Color(0x809C27B0),
+                        strokeWidth = 5f,
+                        fillColor = Color(0x309C27B0),
+                        clickable = true,
+                        onClick = {
+                            if (currentUser?.isGuide == true) {
+                                showRemoveGeofenceDialog = area
+                            }
                         }
                     )
                 }
             }
-
-            if (isInAddPoiMode) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Marqueur central",
-                    modifier = Modifier.align(Alignment.Center).size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Row(
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Button(onClick = { isInAddPoiMode = false }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)) { Text("Annuler") }
-                    Button(onClick = { showAddPoiDialog = true; isInAddPoiMode = false }) { Text("Confirmer l'emplacement") }
-                }
-            }
         }
 
-        if (showAddPoiDialog) {
+        if (showAddPoiDialog && newPoiLocation != null) {
             AddPoiDialog(
                 onDismiss = { showAddPoiDialog = false },
                 onConfirm = { name, description ->
-                    val poiLatLng = cameraPositionState.position.target
-                    onAddPoi(name, description, poiLatLng.latitude, poiLatLng.longitude)
+                    onAddPoi(name, description, newPoiLocation!!.latitude, newPoiLocation!!.longitude)
                     showAddPoiDialog = false
+                }
+            )
+        }
+
+        if (showAddGeofenceDialog) {
+            SetGeofenceDialog(
+                initialLocation = cameraPositionState.position.target,
+                onDismiss = { showAddGeofenceDialog = false },
+                onConfirm = { id, name, lat, lon, radius ->
+                    onAddGeofence(id, name, lat, lon, radius)
+                    showAddGeofenceDialog = false
+                }
+            )
+        }
+
+        if (showRemoveGeofenceDialog != null) {
+            AlertDialog(
+                onDismissRequest = { showRemoveGeofenceDialog = null },
+                title = { Text("Supprimer la Zone") },
+                text = { Text("Voulez-vous vraiment supprimer la zone \"${showRemoveGeofenceDialog?.name}\" ?") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            onRemoveGeofence(showRemoveGeofenceDialog!!.id)
+                            showRemoveGeofenceDialog = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) { Text("Supprimer") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRemoveGeofenceDialog = null }) { Text("Annuler") }
                 }
             )
         }
@@ -320,30 +347,24 @@ private fun stopLocationTrackingService(context: Context) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewMapScreenContent() {
-    val fakeUser = User(id = "user1", username = "Moi")
+    val fakeUser = User(id = "user1", username = "Moi", isGuide = true)
     val fakeUserLocation = android.location.Location("preview").apply {
         latitude = 48.8584
         longitude = 2.2945
     }
-    val fakeMembers = listOf(
-        DomainLocation(userId = "user2", latitude = 48.8606, longitude = 2.3376, timestamp = Date()),
-        DomainLocation(userId = "user3", latitude = 48.8530, longitude = 2.3499, timestamp = Date())
-    )
-    val fakePois = listOf(
-        PointOfInterest(id = "poi1", name = "Tour Eiffel", latitude = 48.8584, longitude = 2.2945)
-    )
-
     MapScreenContent(
         currentUser = fakeUser,
-        currentGroup = com.easytoday.guidegroup.domain.model.Group(name = "Groupe de Preview"),
         userRealtimeLocation = fakeUserLocation,
-        memberLocations = fakeMembers,
-        pointsOfInterest = fakePois,
+        memberLocations = emptyList(),
+        pointsOfInterest = emptyList(),
+        geofenceAreas = emptyList(),
         isTracking = true,
         focusEvent = null,
         onFocusEventConsumed = {},
         onNavigateBack = {},
         onAddPoi = { _, _, _, _ -> },
+        onAddGeofence = { _, _, _, _, _ -> },
+        onRemoveGeofence = {},
         onToggleTracking = {},
         onSharePoiClick = {}
     )

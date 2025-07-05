@@ -2,6 +2,7 @@
 package com.easytoday.guidegroup.domain.model
 
 import com.google.firebase.firestore.DocumentId // Assurez-vous que cet import est présent
+import com.google.firebase.firestore.PropertyName
 
 /**
  * Entité de données représentant un utilisateur dans l'application Group Guide.
@@ -13,6 +14,7 @@ import com.google.firebase.firestore.DocumentId // Assurez-vous que cet import e
  */
 // app/src/main/java/com/easytoday/guidegroup/domain/model/User.kt
 
+
 data class User(
     @DocumentId val id: String = "",
     val email: String = "",
@@ -20,7 +22,10 @@ data class User(
     val profileImageUrl: String = "",
     val lastKnownLat: Double = 0.0,
     val lastKnownLon: Double = 0.0,
-    val isGuide: Boolean = false // <-- AJOUTEZ CETTE LIGNE
+    // CORRECTION : On indique à Firestore que ce champ Kotlin
+    // correspond au champ "guide" dans la base de données.
+    @get:PropertyName("guide") @set:PropertyName("guide")
+    var isGuide: Boolean = false
 )
 
 
