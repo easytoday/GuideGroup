@@ -121,7 +121,6 @@ class LocationTrackingService : Service() {
         serviceScope.launch {
             val currentUserResult = authRepository.getCurrentUser().firstOrNull()
 
-            // CORRECTION : Utilisation de 'when' pour un type-casting sûr
             val userId: String? = when (currentUserResult) {
                 is Result.Success -> currentUserResult.data?.id
                 else -> null
@@ -186,6 +185,7 @@ class LocationTrackingService : Service() {
         const val NOTIFICATION_ID = 123
         const val ACTION_START = "ACTION_START_LOCATION_TRACKING"
         const val ACTION_STOP = "ACTION_STOP_LOCATION_TRACKING"
+        const val EXTRA_GROUP_ID = "groupId"
         const val UPDATE_INTERVAL = 5000L
         const val FASTEST_UPDATE_INTERVAL = 3000L
     }

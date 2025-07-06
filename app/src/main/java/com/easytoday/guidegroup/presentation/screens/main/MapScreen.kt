@@ -342,29 +342,3 @@ private fun stopLocationTrackingService(context: Context) {
         context.startService(it)
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewMapScreenContent() {
-    val fakeUser = User(id = "user1", username = "Moi", isGuide = true)
-    val fakeUserLocation = android.location.Location("preview").apply {
-        latitude = 48.8584
-        longitude = 2.2945
-    }
-    MapScreenContent(
-        currentUser = fakeUser,
-        userRealtimeLocation = fakeUserLocation,
-        memberLocations = emptyList(),
-        pointsOfInterest = emptyList(),
-        geofenceAreas = emptyList(),
-        isTracking = true,
-        focusEvent = null,
-        onFocusEventConsumed = {},
-        onNavigateBack = {},
-        onAddPoi = { _, _, _, _ -> },
-        onAddGeofence = { _, _, _, _, _ -> },
-        onRemoveGeofence = {},
-        onToggleTracking = {},
-        onSharePoiClick = {}
-    )
-}

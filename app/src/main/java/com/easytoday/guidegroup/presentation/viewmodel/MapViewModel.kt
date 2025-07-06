@@ -23,7 +23,7 @@ class MapViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
     private val geofenceRepository: GeofenceRepository,
-    private val trackingStateRepository: TrackingStateRepository,
+    trackingStateRepository: TrackingStateRepository, // Injecté pour l'état du suivi
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -58,7 +58,6 @@ class MapViewModel @Inject constructor(
 
     private val _addGeofenceState = MutableStateFlow<Result<Unit>>(Result.Initial)
     val addGeofenceState: StateFlow<Result<Unit>> = _addGeofenceState.asStateFlow()
-
 
     init {
         observeCurrentUser()
