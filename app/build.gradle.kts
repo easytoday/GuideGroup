@@ -406,6 +406,13 @@ afterEvaluate {
         ksp("androidx.hilt:hilt-compiler:1.2.0")
         // --- FIN DES AJOUTS ---
 
+
+        // ROOM
+        implementation(libs.room.runtime)
+        implementation(libs.room.ktx)
+        // Annotation processor pour Room. ici ksp.
+        ksp(libs.room.compiler)
+
     }
 
 // Appliquez le plugin Google Services ici (doit être après le bloc dependencies)

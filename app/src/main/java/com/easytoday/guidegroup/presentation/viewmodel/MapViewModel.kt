@@ -1,5 +1,6 @@
 package com.easytoday.guidegroup.presentation.viewmodel
 
+import android.content.Context
 import android.location.Location
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -10,6 +11,7 @@ import com.easytoday.guidegroup.domain.repository.*
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -17,13 +19,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val locationClient: LocationClient,
     private val locationRepository: LocationRepository,
     private val pointOfInterestRepository: PointOfInterestRepository,
     private val authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
     private val geofenceRepository: GeofenceRepository,
-    trackingStateRepository: TrackingStateRepository, // Injecté pour l'état du suivi
+    private val trackingStateRepository: TrackingStateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 

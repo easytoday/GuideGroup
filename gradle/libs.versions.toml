@@ -58,6 +58,8 @@ firebaseBom = "31.1.0" # Vérifiez toujours la dernière version stable sur la d
 firebaseAuth = "22.3.1" # Vérifiez toujours la dernière version stable
 firebaseFirestore = "24.11.1" # Vérifiez toujours la dernière version stable
 firebaseStorage = "20.3.0" # Vérifiez toujours la dernière version stable
+# Room
+room = "2.6.1"
 
 
 [libraries]
@@ -116,6 +118,12 @@ androidx-foundation-android = { group = "androidx.compose.foundation", name = "f
 #Materia 3
 material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" } # Ajoutez cette ligne
 play-services-tasks = { module = "com.google.android.gms:play-services-tasks", version.ref = "playServicesTasks" }
+
+#Room
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
