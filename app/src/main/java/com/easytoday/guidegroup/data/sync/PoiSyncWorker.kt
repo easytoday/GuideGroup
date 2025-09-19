@@ -13,11 +13,12 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
 
-// Mapper pour convertir le modèle du domaine vers l'entité de la base de données
+// CORRECTION : Le champ creatorId est maintenant inclus dans la conversion.
 private fun PointOfInterest.toEntity(): PointOfInterestEntity {
     return PointOfInterestEntity(
         id = this.id,
         groupId = this.groupId,
+        creatorId = this.creatorId,
         name = this.name,
         description = this.description,
         latitude = this.latitude,
@@ -38,7 +39,6 @@ class PoiSyncWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            // Récupérer le groupId passé en paramètre au Worker
             val groupId = inputData.getString("groupId")
             if (groupId.isNullOrBlank()) {
                 Timber.e("PoiSyncWorker: groupId est manquant.")
@@ -47,13 +47,10 @@ class PoiSyncWorker @AssistedInject constructor(
 
             Timber.d("PoiSyncWorker: Démarrage de la synchronisation pour le groupe $groupId")
 
-            // On écoute la première mise à jour de Firestore
             val remotePois = firestoreHelper.getCollectionAsFlow<PointOfInterest>(
                 firestoreHelper.db.collection(POIS_COLLECTION).whereEqualTo("groupId", groupId)
             ).first()
 
-            // On met à jour la base de données locale
-            // C'est une stratégie simple "supprimer-et-remplacer"
             poiDao.deleteAllForGroup(groupId)
             poiDao.upsertAll(remotePois.map { it.toEntity() })
 
@@ -61,7 +58,7 @@ class PoiSyncWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             Timber.e(e, "PoiSyncWorker: Échec de la synchronisation.")
-            Result.retry() // En cas d'échec (ex: pas de réseau), on dit à WorkManager de réessayer plus tard
+            Result.retry()
         }
     }
 }

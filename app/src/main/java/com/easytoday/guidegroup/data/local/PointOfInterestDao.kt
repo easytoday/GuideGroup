@@ -18,6 +18,10 @@ interface PointOfInterestDao {
     @Query("SELECT * FROM points_of_interest WHERE groupId = :groupId")
     fun getPoisForGroup(groupId: String): Flow<List<PointOfInterestEntity>>
 
+    // NOUVEAU : Méthode pour supprimer par ID
+    @Query("DELETE FROM points_of_interest WHERE id = :poiId")
+    suspend fun deleteById(poiId: String)
+
     // Vide la table des POI pour un groupe donné avant une nouvelle synchronisation.
     @Query("DELETE FROM points_of_interest WHERE groupId = :groupId")
     suspend fun deleteAllForGroup(groupId: String)

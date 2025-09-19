@@ -14,6 +14,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import androidx.work.*
+import com.easytoday.guidegroup.data.sync.PoiSyncWorker
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -69,19 +71,68 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             _currentGroupId.filterNotNull().collect { groupId ->
                 observeGroupData(groupId)
+                startPoiSync(groupId)
             }
         }
 
-        val latString = savedStateHandle.get<String>("lat")
-        val lonString = savedStateHandle.get<String>("lon")
-        if (latString != null && lonString != null) {
-            val lat = latString.toDoubleOrNull()
-            val lon = lonString.toDoubleOrNull()
-            if (lat != null && lon != null) {
-                _focusEvent.value = LatLng(lat, lon)
-            }
-        }
+        observeFocusArguments()
     }
+
+    private fun observeFocusArguments() {
+        val latFlow = savedStateHandle.getStateFlow<String?>("lat", null)
+        val lonFlow = savedStateHandle.getStateFlow<String?>("lon", null)
+
+        combine(latFlow, lonFlow) { latString, lonString ->
+            if (latString != null && lonString != null) {
+                LatLng(latString.toDouble(), lonString.toDouble())
+            } else {
+                null
+            }
+        }.onEach { latLng ->
+            _focusEvent.value = latLng
+        }.launchIn(viewModelScope)
+    }
+
+/*    private fun startPoiSync(groupId: String) {
+        val workData = Data.Builder().putString("groupId", groupId).build()
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val syncRequest = OneTimeWorkRequestBuilder<PoiSyncWorker>()
+            .setInputData(workData)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "poi-sync-$groupId",
+            ExistingWorkPolicy.REPLACE,
+            syncRequest
+        )
+    }*/
+
+
+    private fun startPoiSync(groupId: String) {
+        val workData = Data.Builder().putString("groupId", groupId).build()
+
+        // CORRECTION : On retire la contrainte réseau qui bloque l'exécution sur l'émulateur.
+        // val constraints = Constraints.Builder()
+        //     .setRequiredNetworkType(NetworkType.CONNECTED)
+        //     .build()
+
+        val syncRequest = OneTimeWorkRequestBuilder<PoiSyncWorker>()
+            .setInputData(workData)
+            // .setConstraints(constraints) // On ne met plus la contrainte
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "poi-sync-$groupId",
+            ExistingWorkPolicy.REPLACE,
+            syncRequest
+        )
+    }
+
+
+
 
     private fun observeGroupData(groupId: String) {
         groupRepository.getGroup(groupId)
@@ -144,11 +195,13 @@ class MapViewModel @Inject constructor(
     }
 
     fun addPointOfInterest(name: String, description: String, latitude: Double, longitude: Double) {
+        val groupId = _currentGroupId.value ?: return
+        val creatorId = _currentUser.value?.id ?: return
+
         viewModelScope.launch {
-            val groupId = _currentGroupId.value ?: return@launch
             _addPoiState.value = Result.Loading
             try {
-                val newPoi = PointOfInterest(name = name, description = description, latitude = latitude, longitude = longitude, groupId = groupId)
+                val newPoi = PointOfInterest(name = name, description = description, latitude = latitude, longitude = longitude, groupId = groupId, creatorId = creatorId)
                 val poiId = pointOfInterestRepository.addPointOfInterest(newPoi)
                 _addPoiState.value = Result.Success(poiId)
             } catch (e: Exception) {
@@ -192,15 +245,20 @@ class MapViewModel @Inject constructor(
         }
     }
 
+    fun removePointOfInterest(poiId: String) {
+        viewModelScope.launch {
+            pointOfInterestRepository.deletePointOfInterest(poiId)
+        }
+    }
+
     fun resetAddGeofenceState() {
         _addGeofenceState.value = Result.Initial
     }
 
     fun onFocusEventConsumed() {
         _focusEvent.value = null
-        savedStateHandle.remove<String>("lat")
-        savedStateHandle.remove<String>("lon")
-        savedStateHandle.remove<String>("focusOnPoi")
+        savedStateHandle["lat"] = null
+        savedStateHandle["lon"] = null
     }
 
     fun resetAddPoiState() {

@@ -2,7 +2,7 @@
 
 [versions]
 minSdk = "26"
-agp = "8.11.0"
+agp = "8.11.1"
 kotlin = "2.0.0" # was "1.9.23"
 composeCompiler = "2.0.0"
 coreKtx = "1.13.1"

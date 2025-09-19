@@ -8,6 +8,8 @@ data class PointOfInterestEntity(
     @PrimaryKey
     val id: String,
     val groupId: String,
+    // NOUVEAU : Ajout du champ pour l'ID du créateur
+    val creatorId: String,
     val name: String,
     val description: String,
     val latitude: Double,

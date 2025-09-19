@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,6 +37,7 @@ import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
 import java.util.Date
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     navController: NavController,
@@ -106,6 +109,9 @@ fun MapScreen(
         onRemoveGeofence = { geofenceId ->
             viewModel.removeGeofence(geofenceId)
         },
+        onRemovePoi = { poiId ->
+            viewModel.removePointOfInterest(poiId)
+        },
         onToggleTracking = { trackingStatus ->
             if (trackingStatus) {
                 startLocationTrackingService(context, groupId)
@@ -136,6 +142,7 @@ fun MapScreenContent(
     onAddPoi: (name: String, description: String, latitude: Double, longitude: Double) -> Unit,
     onAddGeofence: (id: String, name: String, lat: Double, lon: Double, radius: Float) -> Unit,
     onRemoveGeofence: (geofenceId: String) -> Unit,
+    onRemovePoi: (poiId: String) -> Unit,
     onToggleTracking: (Boolean) -> Unit,
     onSharePoiClick: (PointOfInterest) -> Unit
 ) {
@@ -147,6 +154,10 @@ fun MapScreenContent(
     var showRemoveGeofenceDialog by remember { mutableStateOf<GeofenceArea?>(null) }
     var newPoiLocation by remember { mutableStateOf<LatLng?>(null) }
     var hasUserInteractedWithMap by remember { mutableStateOf(false) }
+
+    var showPoiActions by remember { mutableStateOf<PointOfInterest?>(null) }
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(userRealtimeLocation) {
         if (!hasUserInteractedWithMap && userRealtimeLocation != null) {
@@ -182,13 +193,16 @@ fun MapScreenContent(
         },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Bouton pour recentrer
                 FloatingActionButton(onClick = { hasUserInteractedWithMap = false }) { Icon(Icons.Default.MyLocation, "Recentrer") }
 
+                // Bouton pour le suivi de localisation (pour tous les utilisateurs)
                 FloatingActionButton(
                     onClick = { onToggleTracking(!isTracking) },
                     containerColor = if (isTracking) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
                 ) { Icon(if (isTracking) Icons.Default.Stop else Icons.Default.PlayArrow, "Suivi") }
 
+                // Bouton pour le geofencing (uniquement pour le guide)
                 if (currentUser?.isGuide == true) {
                     FloatingActionButton(onClick = { showAddGeofenceDialog = true }) {
                         Icon(Icons.Default.Security, "Définir une zone")
@@ -210,7 +224,16 @@ fun MapScreenContent(
             ) {
                 userRealtimeLocation?.let { Marker(state = MarkerState(LatLng(it.latitude, it.longitude)), title = currentUser?.username ?: "Moi", icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)) }
                 memberLocations.forEach { Marker(state = MarkerState(LatLng(it.latitude, it.longitude)), title = "Membre ${it.userId}") }
-                pointsOfInterest.forEach { poi -> Marker(state = MarkerState(LatLng(poi.latitude, poi.longitude)), title = poi.name, snippet = poi.description, icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE), onInfoWindowClick = { onSharePoiClick(poi) }) }
+                pointsOfInterest.forEach { poi ->
+                    Marker(
+                        state = MarkerState(LatLng(poi.latitude, poi.longitude)),
+                        title = poi.name,
+                        snippet = "Cliquez pour voir les actions",
+                        onInfoWindowClick = {
+                            showPoiActions = poi
+                        }
+                    )
+                }
 
                 geofenceAreas.forEach { area ->
                     Circle(
@@ -269,6 +292,47 @@ fun MapScreenContent(
                     TextButton(onClick = { showRemoveGeofenceDialog = null }) { Text("Annuler") }
                 }
             )
+        }
+
+        if (showPoiActions != null) {
+            ModalBottomSheet(
+                onDismissRequest = { showPoiActions = null },
+                sheetState = sheetState
+            ) {
+                ListItem(
+                    headlineContent = { Text(showPoiActions!!.name, fontWeight = FontWeight.Bold) },
+                    supportingContent = { Text(showPoiActions!!.description) }
+                )
+                Divider()
+
+                ListItem(
+                    headlineContent = { Text("Partager dans le chat") },
+                    leadingContent = { Icon(Icons.Default.Share, contentDescription = "Partager") },
+                    modifier = Modifier.clickable {
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            if (!sheetState.isVisible) {
+                                onSharePoiClick(showPoiActions!!)
+                                showPoiActions = null
+                            }
+                        }
+                    }
+                )
+
+                if (currentUser?.id == showPoiActions!!.creatorId || currentUser?.isGuide == true) {
+                    ListItem(
+                        headlineContent = { Text("Supprimer ce point d'intérêt", color = MaterialTheme.colorScheme.error) },
+                        leadingContent = { Icon(Icons.Default.Delete, contentDescription = "Supprimer", tint = MaterialTheme.colorScheme.error) },
+                        modifier = Modifier.clickable {
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                if (!sheetState.isVisible) {
+                                    onRemovePoi(showPoiActions!!.id)
+                                    showPoiActions = null
+                                }
+                            }
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -341,4 +405,31 @@ private fun stopLocationTrackingService(context: Context) {
         it.action = LocationTrackingService.ACTION_STOP
         context.startService(it)
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewMapScreenContent() {
+    val fakeUser = User(id = "user1", username = "Moi", isGuide = true)
+    val fakeUserLocation = android.location.Location("preview").apply {
+        latitude = 48.8584
+        longitude = 2.2945
+    }
+    MapScreenContent(
+        currentUser = fakeUser,
+        userRealtimeLocation = fakeUserLocation,
+        memberLocations = emptyList(),
+        pointsOfInterest = emptyList(),
+        geofenceAreas = emptyList(),
+        isTracking = true,
+        focusEvent = null,
+        onFocusEventConsumed = {},
+        onNavigateBack = {},
+        onAddPoi = { _, _, _, _ -> },
+        onAddGeofence = { _, _, _, _, _ -> },
+        onRemoveGeofence = {},
+        onRemovePoi = {},
+        onToggleTracking = {},
+        onSharePoiClick = {}
+    )
 }

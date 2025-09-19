@@ -9,6 +9,8 @@ import com.google.firebase.firestore.ServerTimestamp // <-- AJOUTEZ AUSSI CELLE-
 data class PointOfInterest(
     @DocumentId val id: String = "", // <-- AJOUTÉ ici
     val groupId: String = "",
+    // NOUVEAU : Ajout du champ pour l'ID du créateur
+    val creatorId: String = "",
     val name: String = "",
     val description: String = "",
     val latitude: Double = 0.0,
