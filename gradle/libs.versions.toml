@@ -20,18 +20,8 @@ composeBom = "2024.05.00"
 hilt = "2.56.2"
 # DÉCOMMENTER ET S'ASSURER DE LA VERSION KSP COMPATIBLE AVEC KOTLIN 2.0.0
 #ksp = "1.9.22-1.0.17" # Version de KSP compatible avec Kotlin 1.9.22. Pour Kotlin 2.0.0, il faut la bonne version.
-# La version de KSP pour Kotlin 2.0.0 est généralement "2.0.0-1.0.x" ou "2.0.0-RC-1.0.x"
-# Pour l'instant, utilisons une version stable de KSP pour Kotlin 1.9.22,
-# car les versions KSP pour Kotlin 2.0.0 sont encore en RC ou beta.
-# Si vous utilisez vraiment Kotlin 2.0.0, vous devrez mettre à jour cette ligne
-# dès qu'une version stable de KSP pour 2.0.0 sera disponible.
-# Mettons une version récente et stable pour 1.9.22 qui est souvent utilisée:
 # ksp = "1.9.22-1.0.17" est une bonne option pour Kotlin 1.9.22
-# Pour Kotlin 2.0.0, la version de KSP serait plutôt du type "2.0.0-1.0.21" (à vérifier)
-# Pour la cohérence avec votre version de Kotlin 2.0.0, nous allons la mettre à jour.
-# Vérifions la dernière version KSP pour Kotlin 2.0.0.
-# Au 26 mai 2025, la dernière version de KSP stable avec Kotlin 2.0.0 est "2.0.0-1.0.21".
-ksp = "2.0.0-1.0.21" # <<-- MODIFIÉ POUR KOTLIN 2.0.0
+ksp = "2.0.0-1.0.21" #  MODIFIÉ POUR KOTLIN 2.0.0
 mockkAndroid = "1.13.10"
 mockkVersion = "1.13.10"
 navigationCompose = "2.8.0-beta01"
@@ -51,7 +41,7 @@ mapsCompose = "4.3.0"
 #mapsCompose = "6.6.0"
 foundationAndroid = "1.6.7" # Version actuelle de maps-compose
 #Material 3
-composeMaterial = "1.6.7" # Ou la version que vous utilisez pour Material3 ou autre compose.
+composeMaterial = "1.6.7" # Ou la version pour Material3 ou compose.
 materialIconsExtended = "1.6.7" # Ajoutez cette ligne avec la même version que composeMaterial
 #Firebase
 firebaseBom = "31.1.0" # Vérifiez toujours la dernière version stable sur la documentation Firebase
@@ -82,13 +72,13 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 # REMPLACER hilt-compiler par hilt-android-compiler pour KSP
-hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" } # <<-- MODIFIÉ
+hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" } # 
 # Ajouté pour hilt-navigation-compose
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version = "1.2.0" }
 # REMPLACER hilt-compiler par hilt-compiler pour KSP
-androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version = "1.2.0" } # <<-- MODIFIÉ
-# Pour les tests Hilt, utiliser les versions de testing
-hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" } # <<-- AJOUTÉ
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version = "1.2.0" } # 
+# Pour les tests Hilt, on prend les versions de testing
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" } # 
 
 # Google Play Services Location
 google-play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
@@ -131,7 +121,7 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "composeCompiler" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 # DÉCOMMENTER ET AJOUTER LE PLUGIN KSP
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" } # <<-- DÉCOMMENTÉ ET AJOUTÉ
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" } # 
 secrets-gradle-plugin = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
 
 [bundles]
@@ -144,5 +134,5 @@ compose = [
     "androidx-ui-test-manifest",
     "androidx-ui-test-junit4",
     "androidx-material3",
-    "material-icons-extended" # <--- AJOUTEZ CETTE LIGNE ICI
+    "material-icons-extended" # 
 ]
