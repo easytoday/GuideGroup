@@ -21,8 +21,8 @@ plugins {
     alias(libs.plugins.secrets.gradle.plugin)
     alias(libs.plugins.compose.compiler)
 
-    //id("com.google.dagger.hilt.android") // Nouveau : si vous utilisez Hilt
-    //id("org.jetbrains.kotlin.plugin.parcelize") // Nouveau : si vous utilisez Parcelize
+    //id("com.google.dagger.hilt.android") // Nouveau : si Hilt
+    //id("org.jetbrains.kotlin.plugin.parcelize") // Nouveau : si Parcelize
 
     
 }
@@ -58,51 +58,51 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            //unitTest.enabled = false // <-- AJOUTEZ CETTE LIGNE
+            //unitTest.enabled = false // 
         }
         debug{
             isMinifyEnabled = false
             // Désactive la compilation et l'exécution des tests unitaires pour ce type de build
-            //unitTest.enabled = false // <-- AJOUTEZ CETTE LIGNE
+            //unitTest.enabled = false // 
         }
     }
 
-    // --- AJOUTEZ CE BLOC : Déclaration des dimensions de saveurs ---
-    flavorDimensions += "app_mode" // Déclarez la dimension "app_mode"
+    // --- Déclaration des dimensions de flavors ---
+    flavorDimensions += "app_mode" // Déclare la dimension "app_mode"
 
-    // NOUVEAU BLOC : productFlavors
+    // BLOC : productFlavors
     productFlavors {
         create("mock") {
-            dimension = "app_mode" // Une dimension pour regrouper les saveurs
+            dimension = "app_mode" // Une dimension pour regrouper les flavors
             applicationIdSuffix = ".mock" // Ajoute ".mock" à l'ID de l'application
             versionNameSuffix = "-mock" // Ajoute "-mock" au nom de la version
         }
         create("prod") {
             dimension = "app_mode" // Doit être la même dimension que 'mock'
-            // Pas de suffixe pour l'ID de l'application par défaut pour la saveur de production
+            // Pas de suffixe pour l'ID de l'application par défaut pour la flavor de production
         }
     }
-    // NOUVEAU BLOC : sourceSets pour gérer les fichiers spécifiques aux saveurs
+    // sourceSets pour gérer les fichiers spécifiques aux flavors
     sourceSets {
         getByName("main") {
             java.srcDirs("src/main/java")
             res.srcDirs("src/main/res")
-            // ... autres configurations si vous en avez
+            // ... autres configurations éventuelles
         }
         getByName("mock") {
-            java.srcDirs("src/mock/java") // Dossier pour le code Java/Kotlin de la saveur mock
-            res.srcDirs("src/mock/res")   // Dossier pour les ressources de la saveur mock
+            java.srcDirs("src/mock/java") // Dossier pour le code Java/Kotlin de la flavor mock
+            res.srcDirs("src/mock/res")   // Dossier pour les ressources de la flavor mock
         }
         getByName("prod") {
-            java.srcDirs("src/prod/java") // Dossier pour le code Java/Kotlin de la saveur prod
-            res.srcDirs("src/prod/res")   // Dossier pour les ressources de la saveur prod
+            java.srcDirs("src/prod/java") // Dossier pour le code Java/Kotlin de la flavor prod
+            res.srcDirs("src/prod/res")   // Dossier pour les ressources de la flavor prod
         }
 
 
 
     }
 
-// --- NOUVEAU BLOC HILT POUR LA GESTION DES MODULES PAR SAVEUR ---
+// --- BLOC HILT POUR LA GESTION DES MODULES PAR FLAVOR ---
 // Inclure les modules Firebase, Repository et UseCase pour l'application
 //    hilt {
 //        // La syntaxe `configure(prod) { ... }` est correcte
@@ -116,13 +116,13 @@ android {
 //            // Utilisez `exclude.set(listOf(...))` pour Kotlin DSL
 //            // Aucune exclusion nécessaire car il n'y a plus de modules mock
 //            exclude(
-//                   com.easytoday.guidegroup.di.MockModule::class.java // Modules à exclure pour la saveur 'prod'
+//                   com.easytoday.guidegroup.di.MockModule::class.java // Modules à exclure pour la flavor 'prod'
 //               )
 //            }
 //
 //        configure(listOf(project.android.productFlavors.getByName("mock"))) {
 //            include(
-//                com.easytoday.guidegroup.di.MockModule::class.java // Modules à inclure pour la saveur 'mock'
+//                com.easytoday.guidegroup.di.MockModule::class.java // Modules à inclure pour la flavor 'mock'
 //            )
 //            exclude(
 //                com.easytoday.guidegroup.di.FirebaseModule::class.java, // Exclure les modules réels en mode mock
@@ -134,7 +134,7 @@ android {
 
 
         // Résoudre les conflits de ressources ou de dépendances si nécessaire
-        // Parfois, Hilt peut nécessiter des configurations spécifiques avec les saveurs de produit
+        // Parfois, Hilt peut nécessiter des configurations spécifiques avec les flavors de produit
         packaging {
             resources {
                 excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -177,19 +177,19 @@ android {
             ignoreList.add("sdk.*") // Exemple de clés correspondant à un motif à ignorer
         }
 
-    // NOUVEAU BLOC DE GESTION DES RESSOURCES
+    // BLOC DE GESTION DES RESSOURCES
     packaging {
         resources {
             excludes += "META-INF/LICENSE.md"
-            excludes += "META-INF/LICENSE-notice.md" // Ajoutez aussi celui-ci si vous le voyez apparaître plus tard
-            //excludes += "META-INF/*.txt" // Souvent utile pour exclure d'autres fichiers de licence/notes
-            excludes += "META-INF/*.kotlin_module" // Utile pour les modules Kotlin
+            excludes += "META-INF/LICENSE-notice.md" // au cas ou! 
+            //excludes += "META-INF/*.txt" // pour exclure d'autres fichiers de licence/notes
+            excludes += "META-INF/*.kotlin_module" // pour les modules Kotlin
         }
     }
 
     // --- NOUVEAU : Exclure les tâches de test du build ---
-// ATTENTION: C'est une solution temporaire pour permettre la compilation.
-// Il faudra retirer ceci et corriger vos tests ultérieurement.
+// ATTENTION: solution temporaire pour permettre la compilation.
+// Il faudra retirer ceci et corriger les tests ultérieurement.
 //    tasks.whenTaskAdded {
 //        if (name.contains("test", ignoreCase = true) || name.contains("Test", ignoreCase = true)) {
 //            if (!name.contains("assemble", ignoreCase = true)) { // Ne pas exclure assemble tasks
@@ -209,7 +209,7 @@ android {
 //        checkDependencies = false // Peut aussi aider si Lint regarde les dépendances de test
         // Optionnel: Désactiver complètement Lint pour un build rapide, mais moins sûr
         // abortOnError = false // Permet au build de continuer même avec des erreurs Lint
-        // lintConfig file("lint-baseline.xml") // Si vous avez un fichier de baseline
+        // lintConfig file("lint-baseline.xml") // Si un fichier de baseline existe
     ///
 
     }
@@ -319,18 +319,18 @@ afterEvaluate {
         implementation("com.google.firebase:firebase-messaging-ktx")
 
         // Importez le Firebase BOM en premier pour gérer les versions de Firebase
-        //implementation(platform(libs.firebase.bom)) <-- DEUXIÈME FOIS
+        //implementation(platform(libs.firebase.bom)) // DEUXIÈME FOIS
         // Firebase
-        //implementation(libs.firebase.auth.ktx) <-- Déjà inclus ci-dessus, potentiellement redondant ou en conflit
-        //implementation(libs.firebase.firestore.ktx) <-- Déjà inclus ci-dessus, potentiellement redondant ou en conflit
+        //implementation(libs.firebase.auth.ktx) // Déjà inclus ci-dessus, potentiellement redondant ou en conflit
+        //implementation(libs.firebase.firestore.ktx) //Déjà inclus ci-dessus
 
         // Pour Timber (Version en dur, à déplacer dans libs.versions.toml)
         implementation("com.jakewharton.timber:timber:5.0.1")
         //implementation("com.jakewharton.timber:timber:5.0.1")
 
         // Kotlin Coroutines (Versions en dur, à déplacer dans libs.versions.toml)
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0") // Conservez ces versions si elles fonctionnent pour vous
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0") // Conservez ces versions si elles fonctionnent pour vous
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0") // Conservez ces versions si elles fonctionnent
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0") // Conservez ces versions si elles fonctionnent
         //ajout
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services")
 
@@ -345,8 +345,8 @@ afterEvaluate {
 
         // Google Play Services
         implementation(libs.google.play.services.location)
-        implementation(libs.google.play.services.maps) // <-- MODIFIÉ : Utilise la référence TOML
-        implementation(libs.maps.compose) // <-- MODIFIÉ : Utilise la référence TOML
+        implementation(libs.google.play.services.maps) // MODIFIÉ : Utilise la référence TOML
+        implementation(libs.maps.compose) // MODIFIÉ : Utilise la référence TOML
         implementation("com.google.android.gms:play-services-tasks:18.2.0") // Peut rester ici ou être aussi ajouté au TOML
         //implementation(libs.play.services.tasks) // Peut rester ici ou être aussi ajouté au TOML
 
@@ -365,12 +365,12 @@ afterEvaluate {
         androidTestImplementation(platform(libs.androidx.compose.bom))
         androidTestImplementation(libs.androidx.ui.test.junit4)
 
-        // Kotest Testing (si non déjà là, ajoutez-les)
+        // Kotest Testing (à ajouter)
         testImplementation(libs.kotest.runner.junit5)
         testImplementation(libs.kotest.assertions.core)
         testImplementation(libs.kotest.property)
 
-        // MockK et Robolectric (gardé en dur car pas dans votre TOML)
+        // MockK et Robolectric (gardé en dur car pas dans TOML)
         testImplementation("org.junit.jupiter:junit-jupiter-api:5.11.0")
         testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.0")
         testImplementation("org.junit.jupiter:junit-jupiter-params:5.11.0")
@@ -378,7 +378,7 @@ afterEvaluate {
         testImplementation("org.robolectric:robolectric:4.12.1")
         androidTestImplementation(libs.mockk.android)
 
-        // Hilt Testing (Utilise les références TOML)
+        // Hilt Testing (références TOML)
         androidTestImplementation(libs.hilt.android.testing)
         kspAndroidTest(libs.hilt.android.compiler) // Processeur d'annotation Hilt pour tests d'instrumentation
         testImplementation(libs.hilt.android.testing)
@@ -398,7 +398,7 @@ afterEvaluate {
         // pour la classe SeeddatabaseUseCase
         implementation("com.google.code.gson:gson:2.10.1")
 
-        // --- AJOUTEZ CES 3 LIGNES CI-DESSOUS ---
+        // --- AJOUT ---
         // WorkManager pour les tâches en arrière-plan
         implementation("androidx.work:work-runtime-ktx:2.9.0")
         // Intégration de Hilt avec WorkManager
@@ -416,4 +416,4 @@ afterEvaluate {
     }
 
 // Appliquez le plugin Google Services ici (doit être après le bloc dependencies)
-//apply(plugin = "com.google.gms.google-services")   <<-- redondance car dékjà en haut dans plugins id("com.google.gms.google-services")
+//apply(plugin = "com.google.gms.google-services")   // redondance car dékjà en haut dans plugins id("com.google.gms.google-services")

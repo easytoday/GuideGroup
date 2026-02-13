@@ -18,7 +18,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber // Assurez-vous d'utiliser Timber ou Log pour le débogage
+import timber.log.Timber // Timber ou Log pour le débogage
 
 import javax.inject.Inject
 

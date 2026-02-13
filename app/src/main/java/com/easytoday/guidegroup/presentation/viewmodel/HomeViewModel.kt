@@ -61,7 +61,7 @@ class HomeViewModel @Inject constructor(
                     Timber.e("Error fetching current user: ${userResult.message}")
                 }
                 is Result.Loading, is Result.Initial -> {
-                    // Optionnel : vous pouvez afficher un état de chargement pour l'utilisateur
+                    // afficher un état de chargement pour l'utilisateur
                     // Pour l'instant, on met à null
                     _currentUser.value = null
                 }

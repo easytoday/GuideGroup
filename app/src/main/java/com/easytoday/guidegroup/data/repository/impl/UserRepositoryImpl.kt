@@ -49,7 +49,7 @@ class UserRepositoryImpl @Inject constructor(
                 // Si l'utilisateur s'est déconnecté, émet un succès avec null.
                 flowOf(Result.Success(null))
             } else {
-                // Si un utilisateur est connecté, réutilise notre fonction getUser pour obtenir ses données.
+                // Si un utilisateur est connecté, réutilise la fonction getUser pour obtenir ses données.
                 // Elle gère déjà les états Loading, Success et Error.
                 getUser(userId)
             }

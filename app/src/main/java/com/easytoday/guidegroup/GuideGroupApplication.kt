@@ -3,7 +3,7 @@ package com.easytoday.guidegroup
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.easytoday.guidegroup.notification.NotificationHelper // <-- Assurez-vous que cet import est présent
+import com.easytoday.guidegroup.notification.NotificationHelper 
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 import javax.inject.Inject

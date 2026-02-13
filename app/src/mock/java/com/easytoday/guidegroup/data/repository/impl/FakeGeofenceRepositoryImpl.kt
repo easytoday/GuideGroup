@@ -1,7 +1,7 @@
 package com.easytoday.guidegroup.data.repository.impl
 
 import com.easytoday.guidegroup.domain.model.GeofenceArea
-// CORRECTION : Importer notre classe Result personnalisée
+// CORRECTION : Importer classe Result 
 import com.easytoday.guidegroup.domain.model.Result
 import com.easytoday.guidegroup.domain.repository.GeofenceRepository
 import kotlinx.coroutines.delay
@@ -28,7 +28,7 @@ class FakeGeofenceRepositoryImpl @Inject constructor() : GeofenceRepository {
         val currentDb = fakeGeofenceAreasDb.value
         currentDb[geofenceArea.id] = geofenceArea
         fakeGeofenceAreasDb.value = currentDb
-        // CORRECTION : Utiliser notre Result.Success
+        // CORRECTION : Utiliser le Result.Success
         return Result.Success(Unit)
     }
 
@@ -38,10 +38,10 @@ class FakeGeofenceRepositoryImpl @Inject constructor() : GeofenceRepository {
         return if (currentDb.containsKey(geofenceId)) {
             currentDb.remove(geofenceId)
             fakeGeofenceAreasDb.value = currentDb
-            // CORRECTION : Utiliser notre Result.Success
+            // CORRECTION : Utiliser Result.Success
             Result.Success(Unit)
         } else {
-            // CORRECTION : Utiliser notre Result.Error
+            // CORRECTION : Utiliser Result.Error
             Result.Error("GeofenceArea with ID $geofenceId not found.", Exception("Not Found"))
         }
     }
@@ -56,10 +56,10 @@ class FakeGeofenceRepositoryImpl @Inject constructor() : GeofenceRepository {
     override suspend fun startMonitoringGeofence(geofenceArea: GeofenceArea): Result<Unit> {
         delay(500)
         return if (geofenceArea.name.contains("no_permission", ignoreCase = true)) {
-            // CORRECTION : Utiliser notre Result.Error
+            // CORRECTION : Utiliser Result.Error
             Result.Error("Permission denied for monitoring geofence.", SecurityException("Fake permission denied"))
         } else {
-            // CORRECTION : Utiliser notre Result.Success
+            // CORRECTION : Utiliser Result.Success
             Result.Success(Unit)
         }
     }
@@ -67,10 +67,10 @@ class FakeGeofenceRepositoryImpl @Inject constructor() : GeofenceRepository {
     override suspend fun stopMonitoringGeofence(geofenceIds: List<String>): Result<Unit> {
         delay(500)
         return if (geofenceIds.contains("permission_fail")) {
-            // CORRECTION : Utiliser notre Result.Error
+            // CORRECTION : Utiliser Result.Error
             Result.Error("Permission denied for stopping geofence monitoring.", SecurityException("Fake permission denied"))
         } else {
-            // CORRECTION : Utiliser notre Result.Success
+            // CORRECTION : Utiliser Result.Success
             Result.Success(Unit)
         }
     }

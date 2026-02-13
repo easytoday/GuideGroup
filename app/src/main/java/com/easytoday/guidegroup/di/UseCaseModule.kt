@@ -61,7 +61,7 @@ object UseCaseModule {
         return StopGeofenceMonitoringUseCase(geofenceRepository)
     }
 
-    // Vous pouvez ajouter d'autres use cases ici au fur et à mesure que vous les créez.
+    // ajout d'autres use cases ici au fur et à mesure qu'ils sont créés.
     // Par exemple, pour les groupes:
     // @Provides
     // @Singleton

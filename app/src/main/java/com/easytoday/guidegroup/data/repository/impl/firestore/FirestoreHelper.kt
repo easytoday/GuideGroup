@@ -10,7 +10,7 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow // <<-- MODIFIÉ
+import kotlinx.coroutines.flow.callbackFlow // MODIFIÉ
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -23,7 +23,7 @@ import javax.inject.Inject
  * et convertir les instantanés en flux Kotlin.
  */
 class FirestoreHelper @Inject constructor(
-    internal val db: FirebaseFirestore, // <<-- MODIFIÉ : Rendu internal pour les fonctions inline
+    internal val db: FirebaseFirestore, // MODIFIÉ : Rendu internal pour les fonctions inline
     internal val auth: FirebaseAuth  // NOUVEAU changement d'architecture, (n'implique pas de changement dans le code de FirestoreHelper)
 ) { //cela implique de modifier tous les constructeurs des fichiers *RespositoryImpl
     /**
@@ -51,7 +51,7 @@ class FirestoreHelper @Inject constructor(
             Timber.d("Stopping snapshot listener for document $documentId")
             registration.remove() // Retire le listener quand le flow est annulé
         }
-    }.flowOn(Dispatchers.IO) // Exécuter la logique de Firestore sur un dispatcher IO
+    }.flowOn(Dispatchers.IO) // Exécute la logique de Firestore sur un dispatcher IO
 
     /**
      * Récupère un document en temps réel comme un Flow de Result<T?>.

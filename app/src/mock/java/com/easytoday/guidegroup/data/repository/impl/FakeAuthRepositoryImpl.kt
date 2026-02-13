@@ -68,9 +68,8 @@ class FakeAuthRepositoryImpl @Inject constructor() : AuthRepository {
         }
     }
 
-    // La méthode resetPassword n'est PAS présente dans l'interface AuthRepository que vous avez fournie.
+    // La méthode resetPassword n'est PAS présente dans l'interface AuthRepository. 
     // Donc, elle doit être supprimée de FakeAuthRepositoryImpl pour éviter l'erreur "overrides nothing".
-    // Si vous l'ajoutez plus tard à l'interface, vous pourrez la réimplémenter ici.
 
 }
 

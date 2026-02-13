@@ -28,16 +28,16 @@ class AuthRepositoryImplTest : BehaviorSpec({
         }
     }
 
-    // On moque le REPOSITORY directement, car nous allons surcharger une de ses méthodes
+    // On moque le REPOSITORY directement, car on surcharge une de ses méthodes
     val mockAuthRepository = mockk<AuthRepositoryImpl>()
 
-    // Les autres mocks ne sont plus nécessaires pour ce test spécifique, mais on les garde pour les autres
+    // Les autres mocks ne sont plus nécessaires pour ce test, mais on les garde pour les autres
     val mockFirestoreHelper = mockk<FirestoreHelper>()
     val mockFirebaseAuth = mockk<FirebaseAuth>(relaxed = true)
 
     Given("AuthRepositoryImpl") {
 
-        // ... (Les autres tests pour signUp, signIn, etc. peuvent être ajoutés ici si besoin)
+        // ... (ajouter les autres tests pour signUp, signIn, etc. )
 
         When("getCurrentUser est appelé") {
 
@@ -46,12 +46,12 @@ class AuthRepositoryImplTest : BehaviorSpec({
                     // Étape 1: Créer un Flow simple et contrôlable
                     val userFlowController = MutableStateFlow<Result<User?>>(Result.Success(null))
 
-                    // Étape 2: Dire à MockK de retourner notre flow contrôlable
+                    // Étape 2: Dire à MockK de retourner le flow contrôlable
                     every { mockAuthRepository.getCurrentUser() } returns userFlowController
 
                     // Étape 3: Utiliser Turbine pour tester
                     mockAuthRepository.getCurrentUser().test {
-                        // Le premier item émis est notre état initial (déconnecté)
+                        // Le premier item émis est l'état initial (déconnecté)
                         awaitItem() shouldBe Result.Success(null)
 
                         // Étape 4: Simuler une connexion en poussant une nouvelle valeur

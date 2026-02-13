@@ -37,5 +37,5 @@ object DatabaseModule {
         return database.pointOfInterestDao()
     }
 
-    // Vous ajouterez ici les DAOs pour les autres tables (locations, etc.) dans le futur.
+    // ajout des DAOs pour les autres tables (locations, etc.) dans le futur.
 }

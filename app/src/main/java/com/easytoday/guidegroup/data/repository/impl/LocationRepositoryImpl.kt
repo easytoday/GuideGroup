@@ -7,7 +7,7 @@ import com.easytoday.guidegroup.domain.repository.LocationRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.flowOf // Ajoutez cet import pour flowOf
+import kotlinx.coroutines.flow.flowOf // import pour flowOf
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -28,7 +28,7 @@ class LocationRepositoryImpl @Inject constructor(
      * @return Un Flow de [Location] ou null si non trouvée.
      */
     override fun getUserLocation(userId: String): Flow<Location?> {
-        // MODIFICATION ICI : Spécifiez explicitement le type générique <Location>
+        // MODIFICATION : type générique <Location> explicite
         return firestoreHelper.getDocumentAsFlow<Location>(LOCATIONS_COLLECTION, userId)
             .catch { e ->
                 Timber.e("Error getting user location for $userId: ${e.message}", e)
@@ -64,7 +64,7 @@ class LocationRepositoryImpl @Inject constructor(
             return kotlinx.coroutines.flow.flowOf(emptyList())
         }
 
-        // MODIFICATION ICI : Spécifiez explicitement le type générique <Location>
+        // MODIFICATION : type générique <Location> explicite
         return firestoreHelper.getCollectionAsFlow<Location>(
             firestoreHelper.db.collection(LOCATIONS_COLLECTION).whereIn("userId", memberIds)
         ).map { locations ->

@@ -48,7 +48,7 @@ fun RequestPermission(
                 // La permission est déjà accordée
                 onPermissionGranted()
             }
-            // <<-- CORRECTION DE LA LOGIQUE ICI -->>
+            // <<-- CORRECTION DE LA LOGIQUE-->>
             // Vérifie si l'explication est nécessaire ET si onRationaleNeeded est fourni
             onRationaleNeeded != null && (context as? ComponentActivity)?.let { activity ->
                 ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
@@ -72,6 +72,4 @@ fun isPermissionGranted(context: Context, permission: String): Boolean {
     return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }
 
-// La fonction shouldShowRationale commentée n'est plus nécessaire ici car sa logique est intégrée.
-// Vous pouvez la supprimer complètement du fichier.
 

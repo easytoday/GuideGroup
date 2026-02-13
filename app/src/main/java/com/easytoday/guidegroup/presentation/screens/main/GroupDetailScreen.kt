@@ -23,12 +23,12 @@ import com.easytoday.guidegroup.presentation.viewmodel.MapViewModel
 /**
  * Écran "intelligent" pour les détails du groupe.
  * Note : J'utilise le MapViewModel car il a déjà la logique pour charger un groupe par ID.
- * Dans une application plus grande, vous pourriez créer un GroupDetailViewModel dédié.
+ * On aurait pu créer un GroupDetailViewModel dédié.
  */
 @Composable
 fun GroupDetailScreen(
     navController: NavController,
-    groupId: String, // L'ID du groupe est non-nullable ici
+    groupId: String, // L'ID du groupe est non-nullable
     viewModel: MapViewModel = hiltViewModel()
 ) {
     // Demander au ViewModel de charger le groupe pour cet ID
@@ -45,8 +45,7 @@ fun GroupDetailScreen(
             navController.navigate(Screen.ChatScreen.createRoute(groupId))
         },
         onNavigateToMap = {
-            // Assurez-vous que votre MapScreen peut aussi recevoir le groupId
-            // Pour l'instant, je vais supposer qu'elle le peut.
+            // MapScreen peut aussi recevoir le groupId
             // navController.navigate(Screen.MapScreen.createRoute(groupId))
             // Si la route est simple :
             // On utilise la fonction createRoute pour insérer le VRAI groupId

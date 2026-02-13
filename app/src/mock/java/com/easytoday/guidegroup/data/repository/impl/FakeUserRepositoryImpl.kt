@@ -37,15 +37,15 @@ class FakeUserRepositoryImpl @Inject constructor() : UserRepository {
             emit(Result.Success(user))
         } else {
             // Dans un scénario réel, on pourrait émettre Error si l'ID est invalide,
-            // mais pour un utilisateur non trouvé, Success(null) est souvent approprié.
+            // mais pour un utilisateur non trouvé  ==> Success(null).
             emit(Result.Success(null))
         }
     }
 
     // Récupère l'utilisateur actuellement connecté (simulé)
     override fun getCurrentUser(): Flow<Result<User?>> {
-        // Simule l'utilisateur connecté comme étant le premier utilisateur dans notre DB factice
-        // Pour un mock plus réaliste, vous pourriez lier cela à l'état de FakeAuthRepositoryImpl
+        // Simule l'utilisateur connecté comme étant le premier utilisateur dans la DB factice
+        // Pour un mock plus réaliste, lier à l'état de FakeAuthRepositoryImpl
         return fakeUsersDb.map { usersMap ->
             val currentUser = usersMap.values.firstOrNull() // Prend le premier utilisateur comme "courant" pour la simulation
             Result.Success(currentUser)
@@ -58,7 +58,7 @@ class FakeUserRepositoryImpl @Inject constructor() : UserRepository {
     override suspend fun addUser(user: User) {
         delay(300) // Simule un délai
         fakeUsersDb.value[user.id] = user
-        // Vous pouvez logguer ici si vous utilisez Timber ou Logcat pour les mocks
+        // logguer avec Timber pour les mocks
         // Timber.d("FakeUser: User added: ${user.id}")
     }
 

@@ -4,7 +4,7 @@ package com.easytoday.guidegroup.domain.model
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
-//import com.google.firebase.firestore.DocumentId // <-- AJOUTEZ CETTE LIGNE
+//import com.google.firebase.firestore.DocumentId // 
 
 data class MeetingPoint(
     val groupId: String = "",
@@ -13,6 +13,6 @@ data class MeetingPoint(
     val longitude: Double = 0.0,
     val address: String = "",
     //val timestamp: Long = System.currentTimeMillis()
-    @ServerTimestamp val timestamp: Date? = null // <-- MODIFIÉ ici
+    @ServerTimestamp val timestamp: Date? = null // 
 )
 

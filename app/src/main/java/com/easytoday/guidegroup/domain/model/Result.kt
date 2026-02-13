@@ -9,7 +9,7 @@ sealed class Result<out T> {
     object Loading : Result<Nothing>() // Nothing permet de mapper à n'importe quel T
     data class Success<out T>(val data: T) : Result<T>()
     data class Error(val message: String, val exception: Throwable? = null) : Result<Nothing>()
-    object Initial : Result<Nothing>() // Assurez-vous que c'est bien 'object Initial'
+    object Initial : Result<Nothing>() // vérifier que c'est bien 'object Initial'
 }
 
 

@@ -37,7 +37,7 @@ class SeedDatabaseUseCase @Inject constructor(
 
         // Étape 2 : Créer les utilisateurs dans Firebase Auth ET Firestore
         mockUsers.forEach { mockUser ->
-            // signUp retourne un Flow, donc .first() est correct ici.
+            // signUp retourne un Flow, donc .first() est ok.
             val result = authRepository.signUp(
                 email = mockUser.email,
                 password = "password123", // Mot de passe par défaut pour tous les utilisateurs de test

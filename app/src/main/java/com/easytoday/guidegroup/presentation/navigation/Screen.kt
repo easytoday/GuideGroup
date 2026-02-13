@@ -38,7 +38,7 @@ sealed class Screen(val route: String) {
         val arguments = listOf(
             navArgument("groupId") { type = NavType.StringType; nullable = true },
             navArgument("focusOnPoi") { type = NavType.StringType; nullable = true },
-            // On définit les nouveaux arguments ici
+            // On définit les nouveaux arguments 
             navArgument("lat") { type = NavType.StringType; nullable = true },
             navArgument("lon") { type = NavType.StringType; nullable = true }
         )

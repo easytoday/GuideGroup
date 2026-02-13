@@ -64,7 +64,7 @@ class LocationClientImpl @Inject constructor(
     }
 }
 
-// Vous pouvez définir une exception personnalisée si nécessaire
+// définir une exception personnalisée si nécessaire
 class LocationException(message: String) : Exception(message)
 
 

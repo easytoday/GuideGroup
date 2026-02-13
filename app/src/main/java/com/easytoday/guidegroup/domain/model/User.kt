@@ -1,7 +1,7 @@
 // app/src/main/java/com/easytoday/guidegroup/domain/model/User.kt
 package com.easytoday.guidegroup.domain.model
 
-import com.google.firebase.firestore.DocumentId // Assurez-vous que cet import est présent
+import com.google.firebase.firestore.DocumentId 
 import com.google.firebase.firestore.PropertyName
 
 /**

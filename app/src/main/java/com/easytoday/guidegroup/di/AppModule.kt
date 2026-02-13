@@ -1,9 +1,9 @@
 // app/src/main/java/com/easytoday/guidegroup/di/AppModule.kt
 package com.easytoday.guidegroup.di
 
-// Assurez-vous que l'import de Context et ApplicationContext est toujours là si d'autres classes en ont besoin
+// import de Context et ApplicationContext est toujours là si d'autres classes en ont besoin
 import android.content.Context
-import android.app.Application // Si vous fournissez d'autres choses qui ont besoin de l'Application brute
+import android.app.Application // si besoin de l'Application brute
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,12 +19,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
     // La méthode provideApplicationContext() a été retirée car Hilt la fournit par défaut.
-    // Laissez ce module vide s'il n'a pas d'autres @Provides ou @Binds.
-    // Ou ajoutez ici d'autres @Provides pour des dépendances de base qui ne sont pas des Repositories
+    // module vide s'il n'a pas d'autres @Provides ou @Binds.
+    // Ou on peut ajouter d'autres @Provides pour des dépendances de base qui ne sont pas des Repositories
     // et qui ne sont pas spécifiques aux flavors.
 
-    // Par exemple, si vous voulez toujours fournir FusedLocationProviderClient ici,
-    // assurez-vous que son paramètre 'Context' est qualifié.
+    // Par exemple, si on veut fournir FusedLocationProviderClient,
+    // il faut son paramètre 'Context'.
     /*
     @Provides
     @Singleton

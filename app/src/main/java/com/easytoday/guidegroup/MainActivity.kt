@@ -6,18 +6,18 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 
-import android.provider.Settings // Importez Settings pour rediriger vers les paramètres de l'app si besoin
+import android.provider.Settings // Settings pour rediriger vers les paramètres de l'app si besoin
 
 
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts // Importez ceci
+import androidx.activity.result.contract.ActivityResultContracts 
 
 import androidx.compose.foundation.layout.fillMaxSize
 
 import androidx.compose.material3.Surface
 
 
-import androidx.core.content.ContextCompat // Importez ceci
+import androidx.core.content.ContextCompat 
 
 
 import androidx.navigation.compose.rememberNavController
@@ -30,9 +30,9 @@ import com.easytoday.guidegroup.presentation.navigation.AppNavigation
 import com.easytoday.guidegroup.ui.theme.GuideGroupTheme
 import dagger.hilt.android.AndroidEntryPoint
 
-// Définissez vos routes de navigation ici, idéalement dans un objet séparé (ex: `AppRoutes.kt`)
+// Définit les routes de navigation, dans un objet séparé (ex: `AppRoutes.kt`)
 // Pour l'instant, je les mets ici pour la clarté.
-//object AppRoutes {
+// object AppRoutes {
 //    const val LOGIN = "login_route"
 //    const val SIGN_UP = "signup_route"
 //    const val HOME = "home_route"
@@ -55,20 +55,20 @@ class MainActivity : ComponentActivity() {
 
         if (fineLocationGranted && (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || backgroundLocationGranted)) {
             // Toutes les permissions nécessaires sont accordées (ou non requises pour la version Android)
-            // C'est ici que vous devriez déclencher l'initialisation de votre géorepérage
-            // ou informer votre ViewModel/Repository que les permissions sont prêtes.
+            // déclencher l'initialisation du géorepérage
+            // ou informer le ViewModel/Repository que les permissions sont prêtes.
             // Par exemple:
             // geofenceViewModel.onLocationPermissionsGranted()
-            // Ou si vous avez un service qui initie le geofencing:
-            // startGeofencingService() // Appelez votre fonction pour démarrer le service/geofencing
+            // Ou appel service qui initie le geofencing:
+            // startGeofencingService() // fonction pour démarrer le service/geofencing
             println("Toutes les permissions de localisation sont accordées. Vous pouvez initier le géorepérage.")
 
         } else if (Build.VERSION_CODES.Q <= Build.VERSION.SDK_INT && fineLocationGranted && !backgroundLocationGranted) {
-            // Sur Android 10 (Q) et plus : ACCESS_FINE_LOCATION est accordée, mais ACCESS_BACKGROUND_LOCATION non.
-            // C'est un cas particulier où l'utilisateur doit souvent aller dans les paramètres de l'application
+            // Sur Android 10 (Q) et plus : ACCESS_FINE_LOCATION est possible, mais ACCESS_BACKGROUND_LOCATION non.
+            // cas particulier où l'utilisateur doit souvent aller dans les paramètres de l'application
             // pour accorder la permission "Autoriser tout le temps" (Allow all the time).
             println("Permission de localisation en arrière-plan non accordée. Veuillez l'activer dans les paramètres de l'application.")
-            // Vous pouvez optionnellement diriger l'utilisateur vers les paramètres de votre application:
+            // optionnel : diriger l'utilisateur vers les paramètres de l'application:
             // openAppSettings()
         } else {
             // La permission de localisation précise a été refusée.
@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 2. Appelez cette fonction pour vérifier et demander les permissions au démarrage de l'activité
+        // 2. Vérifier et demander les permissions au démarrage de l'activité
         checkAndRequestLocationPermissions()
 
         setContent {
@@ -93,14 +93,14 @@ class MainActivity : ComponentActivity() {
                 ) {
                     //AppNavigation()
                     val navController = rememberNavController()
-                    AppNavigation(navController = navController) // Votre fonction de navigation
+                    AppNavigation(navController = navController) // fonction de navigation
                 }
             }
         }
     }
 
 
-    // 3. Ajoutez cette fonction dans votre classe MainActivity
+    // 3.Vérifier les permission de localisation 
     private fun checkAndRequestLocationPermissions() {
         // Vérifie si la permission de localisation précise est déjà accordée
         val fineLocationGranted = ContextCompat.checkSelfPermission(
@@ -123,23 +123,23 @@ class MainActivity : ComponentActivity() {
         if (!fineLocationGranted) {
             permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
-        // Demandez ACCESS_BACKGROUND_LOCATION seulement si nécessaire et pas encore accordée
+        // Demande ACCESS_BACKGROUND_LOCATION seulement si nécessaire et pas encore accordée
         // et seulement si ACCESS_FINE_LOCATION est déjà accordée ou sur le point d'être demandée
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !backgroundLocationGranted) {
             permissionsToRequest.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         }
 
         if (permissionsToRequest.isNotEmpty()) {
-            // Si des permissions manquent, lancez la demande
+            // Si des permissions manquent, lance la demande
             requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
         } else {
             // Toutes les permissions nécessaires sont déjà accordées.
-            // Vous pouvez directement initier le géorepérage ou les actions qui en dépendent.
+            // directement initier le géorepérage ou les actions qui en dépendent.
             println("Toutes les permissions de localisation sont déjà accordées. Le géorepérage peut être initialisé.")
             // Par exemple:
             // geofenceViewModel.onLocationPermissionsGranted()
-            // Ou si vous avez un service qui initie le geofencing:
-            // startGeofencingService() // Appelez votre fonction pour démarrer le service/geofencing
+            // Ou service qui initie le geofencing:
+            // startGeofencingService() // pour démarrer le service/geofencing
         }
     }
 

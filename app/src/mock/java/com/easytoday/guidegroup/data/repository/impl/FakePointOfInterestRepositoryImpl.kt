@@ -70,8 +70,8 @@ class FakePointOfInterestRepositoryImpl @Inject constructor() : PointOfInterestR
         if (fakePoisDb.value.containsKey(poi.id)) {
             fakePoisDb.value[poi.id] = poi
         } else {
-            // Dans un mock, vous pourriez lancer une exception ou simplement ne rien faire.
-            // Ici, nous ne faisons rien pour simuler une opération sans erreur spécifique.
+            // Dans un mock, lancer une exception ou ne rien faire.
+            // rien pour simuler une opération sans erreur spécifique.
         }
     }
 

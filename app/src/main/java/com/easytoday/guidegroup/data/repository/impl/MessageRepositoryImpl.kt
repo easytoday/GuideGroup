@@ -2,7 +2,7 @@ package com.easytoday.guidegroup.data.repository.impl
 
 import com.easytoday.guidegroup.data.firestore.FirestoreHelper
 import kotlinx.coroutines.flow.flow
-import timber.log.Timber // Ou android.util.Log si vous n'utilisez pas Timber
+import timber.log.Timber // 
 
 import com.easytoday.guidegroup.domain.model.Message
 import com.easytoday.guidegroup.domain.repository.MessageRepository
@@ -15,7 +15,7 @@ import android.net.Uri
 import com.easytoday.guidegroup.domain.model.Result
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
-import kotlinx.coroutines.flow.catch // Importez le catch pour les Flow
+import kotlinx.coroutines.flow.catch // catch pour les Flow
 
 /**
  * Implémentation concrète de [MessageRepository] utilisant Firestore.
@@ -28,7 +28,7 @@ class MessageRepositoryImpl @Inject constructor(
 ) : MessageRepository {
 
     // Chemin de la collection pour les messages.
-    // Il est courant d'avoir des sous-collections de messages sous les groupes,
+    // on peut avoir des sous-collections de messages sous les groupes,
     // par exemple: "groups/{groupId}/messages"
     private val GROUPS_COLLECTION = "groups"
     private val MESSAGES_SUBCOLLECTION = "messages"
@@ -66,7 +66,7 @@ class MessageRepositoryImpl @Inject constructor(
      * @return Un Flow d'une liste de messages.
      */
     override fun getMessagesForGroup(groupId: String): Flow<List<Message>> {
-        // Correction ici : Spécifiez explicitement le type <Message> pour getCollectionAsFlow
+        // Correction : type <Message> pour getCollectionAsFlow
         return firestoreHelper.getCollectionAsFlow<Message>(
             firestoreHelper.db.collection(GROUPS_COLLECTION)
                 .document(groupId)
@@ -86,11 +86,11 @@ class MessageRepositoryImpl @Inject constructor(
      * @param uri L'URI locale du fichier média.
      * @param type Le type de média (IMAGE, AUDIO, VIDEO).
      * @param groupId L'ID du groupe auquel le média est lié. <--- AJOUTÉ
-     * @return Un Flow de [Result] indiquant le succès (avec l'URL de téléchargement) ou l'échec. <--- CHANGÉ
+     * @return Un Flow de [Result] indiquant le succès (avec l'URL de téléchargement) ou l'échec. 
      */
-    // MODIFICATION ICI : Signature de la fonction pour correspondre à l'interface
+    // MODIFICATION : Signature de la fonction pour correspondre à l'interface
     override suspend fun uploadMedia(uri: Uri, type: Message.MediaType, groupId: String): Flow<Result<String>> = flow {
-        emit(Result.Loading) // Commencez par émettre un état de chargement
+        emit(Result.Loading) // émettre un état de chargement
         try {
             val fileExtension = when (type) {
                 Message.MediaType.TEXT -> "txt"
@@ -101,9 +101,9 @@ class MessageRepositoryImpl @Inject constructor(
             }
             val fileName = "${UUID.randomUUID()}.$fileExtension"
             val storageRef = firebaseStorage.reference
-                // Il est bon d'organiser les médias par groupe dans le stockage
+                // organiser les médias par groupe dans le stockage
                 .child(GROUPS_COLLECTION)
-                .child(groupId) // Utilisez le groupId ici
+                .child(groupId) // groupId 
                 .child(MEDIA_STORAGE_PATH)
                 .child(fileName)
 
@@ -111,15 +111,15 @@ class MessageRepositoryImpl @Inject constructor(
             val downloadUrl = uploadTask.storage.downloadUrl.await().toString()
 
             Timber.d("Média téléchargé avec succès: $downloadUrl")
-            emit(Result.Success(downloadUrl)) // Émettez le succès
+            emit(Result.Success(downloadUrl)) // le succès
         } catch (e: StorageException) {
             val errorMessage = "Erreur de stockage Firebase: ${e.message}"
             Timber.e(e, errorMessage)
-            emit(Result.Error(errorMessage, e)) // Émettez l'erreur
+            emit(Result.Error(errorMessage, e)) // l'erreur
         } catch (e: Exception) {
             val errorMessage = "Erreur inattendue lors du téléchargement du média: ${e.message}"
             Timber.e(e, errorMessage)
-            emit(Result.Error(errorMessage, e)) // Émettez l'erreur
+            emit(Result.Error(errorMessage, e)) // l'erreur
         }
     }
 }
