@@ -1,0 +1,10 @@
+site_name: GuideGroup Documentation
+theme: readthedocs
+nav:
+  - Accueil: README.md
+  - Chapitre 1: chapitre1.md
+  - Chapitre 2: chapitre2.md
+  - Chapitre 3: chapitre3.md
+  - Chapitre 4: chapitre4.md
+  - Chapitre 5: chapitre5.md
+  - Chapitre 6: chapitre6.md

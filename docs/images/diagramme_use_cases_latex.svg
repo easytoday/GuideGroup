@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="1465px" preserveAspectRatio="none" style="width:944px;height:1465px;" version="1.1" viewBox="0 0 944 1465" width="944px" zoomAndPan="magnify"><defs><filter height="300%" id="f12v5bsxphtg1t" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><!--MD5=[b18b3722ed4ac8c4b31059921a4f5ac4]
+cluster système guidegroup--><rect fill="#FFFFFF" filter="url(#f12v5bsxphtg1t)" height="1383" style="stroke: #000000; stroke-width: 1.5;" width="676" x="257" y="23.88"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="143" x="523.5" y="40.8459">système guidegroup</text><ellipse cx="429.6335" cy="903.8631" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="46.1335" ry="16.4831" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="61" x="399.1335" y="909.897">s'inscrire</text><ellipse cx="429.3112" cy="971.8631" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="63.8112" ry="16.4831" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="86" x="386.3112" y="977.897">se connecter</text><ellipse cx="429.6759" cy="1040.9152" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="73.1759" ry="17.0352" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="103" x="378.1759" y="1046.9491">se déconnecter</text><ellipse cx="429.2833" cy="164.9367" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="75.7833" ry="17.5567" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="110" x="374.2833" y="170.9706">créer un groupe</text><ellipse cx="429.4545" cy="1299.0709" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="86.4545" ry="19.6909" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="137" x="360.9545" y="1305.1049">rejoindre un groupe</text><ellipse cx="429.5238" cy="1371.7848" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="80.0238" ry="18.4048" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="121" x="369.0238" y="1377.8187">quitter un groupe</text><ellipse cx="429.5556" cy="413.0911" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="96.5556" ry="21.7111" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="161" x="349.0556" y="419.1251">voir la liste des groupes</text><ellipse cx="429.6166" cy="493.1033" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="106.6166" ry="23.7233" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="184" x="337.6166" y="499.1373">voir les détails d'un groupe</text><ellipse cx="814.082" cy="1327.8964" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="103.082" ry="23.0164" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="176" x="726.082" y="1333.9304">envoyer un message texte</text><ellipse cx="429.5608" cy="1219.6922" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="107.0608" ry="23.8122" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="185" x="337.0608" y="1225.7261">envoyer un message média</text><ellipse cx="429.6258" cy="573.0052" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="96.1258" ry="21.6252" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="160" x="349.6258" y="579.0391">voir l'historique du chat</text><ellipse cx="429.5896" cy="654.8979" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="115.5896" ry="25.5179" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="204" x="327.5896" y="660.9319">voir sa localisation sur la carte</text><ellipse cx="429.5852" cy="1127.097" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="156.5852" ry="33.717" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="292" x="283.5852" y="1133.131">voir la localisation des membres du groupe</text><ellipse cx="429.6368" cy="242.8074" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="115.1368" ry="25.4274" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="203" x="328.1368" y="248.8413">ajouter un point d'intérêt (poi)</text><ellipse cx="429.4871" cy="737.0774" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="93.9871" ry="21.1974" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="155" x="351.9871" y="743.1114">voir les points d'intérêt</text><ellipse cx="429.5526" cy="329.9905" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="121.0526" ry="26.6105" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="216" x="321.5526" y="336.0245">démarrer le suivi de localisation</text><ellipse cx="429.3298" cy="86.946" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="113.3298" ry="25.066" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="199" x="329.8298" y="92.9799">arrêter le suivi de localisation</text><ellipse cx="429.3807" cy="822.8561" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="135.3807" ry="29.4761" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="247" x="305.8807" y="828.8901">gérer les permissions de localisation</text><!--MD5=[8fc3522a43f8c7199df5e09e5bb0188e]
+entity user--><ellipse cx="175.5" cy="704.38" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 1.5;"/><path d="M175.5,712.38 L175.5,739.38 M162.5,720.38 L188.5,720.38 M175.5,739.38 L162.5,754.38 M175.5,739.38 L188.5,754.38 " fill="none" filter="url(#f12v5bsxphtg1t)" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="69" x="141" y="774.8459">utilisateur</text><!--MD5=[e7075745af0d4be9012592edd553fe68]
+entity guide--><ellipse cx="43" cy="210.38" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 1.5;"/><path d="M43,218.38 L43,245.38 M30,226.38 L56,226.38 M43,245.38 L30,260.38 M43,245.38 L56,260.38 " fill="none" filter="url(#f12v5bsxphtg1t)" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="39" x="23.5" y="280.8459">guide</text><!--MD5=[3b1e1f29d6c8100eb600051b01ff3836]
+entity participant--><ellipse cx="43" cy="1223.38" fill="#FEFECE" filter="url(#f12v5bsxphtg1t)" rx="8" ry="8" style="stroke: #A80036; stroke-width: 1.5;"/><path d="M43,1231.38 L43,1258.38 M30,1239.38 L56,1239.38 M43,1258.38 L30,1273.38 M43,1258.38 L56,1273.38 " fill="none" filter="url(#f12v5bsxphtg1t)" style="stroke: #A80036; stroke-width: 1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="74" x="6" y="1293.8459">participant</text><!--MD5=[a552fc0b90431714ccaf32fb04ce4373]
+link user to uc1--><path d="M188.75,779.12 C199.67,809.11 218.71,847.82 249,869.88 C288.23,898.45 344.68,905.01 383.76,905.67 " fill="none" id="user-uc1" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[1306d94884301688934f36b86e9fe539]
+link user to uc2--><path d="M179.71,779.13 C185.56,825.28 202.14,897.93 249,937.88 C281.1,965.25 328.3,973.35 366.24,974.83 " fill="none" id="user-uc2" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[4029eb621b645d55a8edd03ddc47f2d8]
+link user to uc3--><path d="M182.37,779.07 C192.67,846.76 216.04,975.18 249,1005.88 C277.81,1032.72 320.82,1041.77 357.52,1043.97 " fill="none" id="user-uc3" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[8df3450bd65971bef557ec10ce5416b8]
+link user to uc7--><path d="M181.74,694.86 C191.44,624.03 214.38,485.3 249,451.88 C271.37,430.28 302.74,419.48 333,414.38 " fill="none" id="user-uc7" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[b10803e269199c33a08fa56929777c73]
+link user to uc8--><path d="M179.86,694.55 C185.86,648.24 202.55,575.13 249,533.88 C270.15,515.1 298.13,504.4 325.69,498.44 " fill="none" id="user-uc8" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[be1e0dd2f1b1d2ad68269e5ca1932410]
+link user to uc11--><path d="M190.67,694.68 C202.14,667 221.02,632.27 249,611.88 C274.13,593.57 306.16,583.55 336.18,578.16 " fill="none" id="user-uc11" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[ad06426e7128573895c1634402d58bd1]
+link user to uc12--><path d="M210.31,716.35 C222.22,709.76 235.91,702.87 249,697.88 C278.04,686.81 310.85,677.95 340.39,671.22 " fill="none" id="user-uc12" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[80558f130ac0f96c5202030216ef6d95]
+link user to uc15--><path d="M210.22,736.88 C242.14,736.88 291.55,736.88 335.3,736.88 " fill="none" id="user-uc15" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[71203c62b67a027b556150f7adbe70aa]
+link user to uc18--><path d="M210.07,756.46 C222.08,762.93 235.89,769.77 249,774.88 C276.05,785.43 306.26,794.5 334.07,801.82 " fill="none" id="user-uc18" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[2a50a21081bc66d93c29d689589a9e3d]
+link guide to user--><path d="M55.13,285 C78.19,372.31 131.31,573.39 158.23,675.29 " fill="none" id="guide-&gt;user" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="none" points="165.06,673.74,163.4,694.87,151.53,677.32,165.06,673.74" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[51f60e5b428323e57d650a017610a22d]
+link guide to uc4--><path d="M62.7,234.28 C75.72,228.59 93.61,221.39 110,216.88 C194.4,193.65 294.43,179.41 359.56,171.83 " fill="none" id="guide-uc4" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[e5ac5bbe1bebeae89627e5aa71fb714a]
+link guide to uc16--><path d="M62.55,247.08 C112.65,258.41 253.12,290.2 344.73,310.93 " fill="none" id="guide-uc16" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[ded3d2d958a3319818ceddcdd3179040]
+link guide to uc17--><path d="M62.54,226.49 C75.35,215.63 93.06,201.48 110,190.88 C182,145.84 275.47,118.35 342.5,103.04 " fill="none" id="guide-uc17" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[e609b89bec7d9a04f845f3158ffb6452]
+link guide to uc14--><path d="M62.55,242.88 C107.4,242.88 224.67,242.88 314.48,242.88 " fill="none" id="guide-uc14" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[58bb10311f5ebd2518c7cbb4283b310e]
+link participant to user--><path d="M54.57,1213.85 C77.55,1122.47 132.14,905.35 159.01,798.47 " fill="none" id="participant-&gt;user" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="none" points="152.26,796.63,163.92,778.94,165.84,800.05,152.26,796.63" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[19fe39bf50dd8d475d919ea640d98ca4]
+link participant to uc5--><path d="M80.17,1259.93 C141.96,1266.84 269.12,1281.06 351.51,1290.27 " fill="none" id="participant-uc5" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[626ebcb5de2610e68a1344ba7ef546e1]
+link participant to uc6--><path d="M80.36,1272.3 C120.83,1290.05 188.51,1318.16 249,1335.88 C286.21,1346.78 328.72,1355.47 363.03,1361.58 " fill="none" id="participant-uc6" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[18747729168b73b512515f142c027e1a]
+link participant to uc9--><path d="M80.35,1294.95 C118.23,1332.46 181.42,1386.48 249,1407.88 C391.79,1453.09 438.37,1433.13 586,1407.88 C651.69,1396.64 723.65,1368.35 768.56,1348.62 " fill="none" id="participant-uc9" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[e6783035fc87e27e27971528dd58d2b1]
+link participant to uc10--><path d="M80.17,1252.49 C136.91,1247.18 248.78,1236.71 330.48,1229.06 " fill="none" id="participant-uc10" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[3d0a044d348317d8c8db3de0d03e10f1]
+link participant to uc13--><path d="M80.27,1237.24 C89.83,1232.62 100.21,1227.86 110,1223.88 C181.23,1194.97 264.42,1169.92 327.91,1152.52 " fill="none" id="participant-uc13" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[0af76e47f7484bf26d745125189d7d9b]
+reverse link uc10 to uc9--><path d="M504.59,1239.58 C530.38,1246.52 559.5,1254.45 586,1261.88 C641.92,1277.56 705.37,1296.07 750.95,1309.49 " fill="none" id="uc10&lt;-uc9" style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 7.0,7.0;"/><polygon fill="#A80036" points="499.47,1238.21,507.1377,1244.3911,504.3016,1239.4965,509.1962,1236.6604,499.47,1238.21" style="stroke: #A80036; stroke-width: 1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="63" x="617" y="1266.777">«includes»</text><!--MD5=[e579edd7b901636df53fe6d27a858666]
+@startuml
+left to right direction
+skinparam packagestyle rectangle
+
+actor "utilisateur" as user
+actor "guide" as guide
+actor "participant" as participant
+
+rectangle "système guidegroup" {
+    usecase "s'inscrire" as uc1
+    usecase "se connecter" as uc2
+    usecase "se déconnecter" as uc3
+    usecase "créer un groupe" as uc4
+    usecase "rejoindre un groupe" as uc5
+    usecase "quitter un groupe" as uc6
+    usecase "voir la liste des groupes" as uc7
+    usecase "voir les détails d'un groupe" as uc8
+    usecase "envoyer un message texte" as uc9
+    usecase "envoyer un message média" as uc10
+    usecase "voir l'historique du chat" as uc11
+    usecase "voir sa localisation sur la carte" as uc12
+    usecase "voir la localisation des membres du groupe" as uc13
+    usecase "ajouter un point d'intérêt (poi)" as uc14
+    usecase "voir les points d'intérêt" as uc15
+    usecase "démarrer le suivi de localisation" as uc16
+    usecase "arrêter le suivi de localisation" as uc17
+    usecase "gérer les permissions de localisation" as uc18
+}
+
+user - - uc1
+user - - uc2
+user - - uc3
+user - - uc7
+user - - uc8
+user - - uc11
+user - - uc12
+user - - uc15
+user - - uc18
+
+guide - -|> user
+guide - - uc4
+guide - - uc16
+guide - - uc17
+guide - - uc14
+
+participant - -|> user
+participant - - uc5
+participant - - uc6
+participant - - uc9
+participant - - uc10
+participant - - uc13
+
+uc9 .up.> uc10 : <<includes>>
+
+@enduml
+
+PlantUML version 1.2020.02(Sun Mar 01 11:22:07 CET 2020)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 21.0.10+7-Debian-1deb13u1
+Operating System: Linux
+Default Encoding: UTF-8
+Language: fr
+Country: FR
+--></g></svg>
